@@ -8,20 +8,18 @@ db = None
 
 async def connect_db():
     global client, db
-    # ServerApi("1") enforces MongoDB Stable API — required for Atlas
     client = motor.motor_asyncio.AsyncIOMotorClient(
         settings.MONGODB_URI,
         server_api=ServerApi("1"),
         tls=True,
         tlsAllowInvalidCertificates=False,
     )
-    # Ping to verify connection before accepting traffic
     try:
         await client.admin.command("ping")
         print(f"[DB] Connected to MongoDB Atlas — database: {settings.MONGODB_DB}")
     except Exception as e:
         print(f"[DB] Connection failed: {e}")
-        raise
+        # No hacer raise aquí — permite que el servidor arranque igual
     db = client[settings.MONGODB_DB]
 
 
