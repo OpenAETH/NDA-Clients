@@ -5,7 +5,7 @@ import certifi
 
 
 client: motor.motor_asyncio.AsyncIOMotorClient = None
-db = None
+db = 'agraound-nda'
 
 
 async def connect_db():
