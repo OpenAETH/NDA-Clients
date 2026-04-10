@@ -16,8 +16,8 @@ import os
 
 load_dotenv()
 
-MONGO_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-MONGO_DB  = os.getenv("MONGODB_DB",  "agraound")
+MONGO_URI = os.getenv("MONGODB_URI", "mongodb+srv://gntprsnl_db_user:uYnfCzedDVhn6QDK@cluster0.0qrrq1w.mongodb.net/?appName=Cluster0")
+MONGO_DB  = os.getenv("MONGODB_DB",  "agraound-nda")
 
 # ═══════════════════════════════════════════════════════════════
 # CATÁLOGO DE PRODUCTOS — editá aquí para agregar o modificar
