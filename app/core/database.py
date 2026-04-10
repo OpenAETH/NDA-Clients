@@ -15,7 +15,6 @@ async def connect_db():
         server_api=ServerApi("1"),
         tls=True,
         tlsCAFile=certifi.where(),
-        serverSelectionTimeoutMS=5000,
     )
 
     try:
