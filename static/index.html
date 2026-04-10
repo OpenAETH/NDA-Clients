@@ -345,10 +345,10 @@
 // ═══════════════════════════════════════════════════════
 // CONFIG — la URL base de la API se detecta automáticamente
 // En producción (Render), el frontend y la API comparten el mismo origen.
-// En dev local, apunta a localhost:8000.
+// En dev local, apunta a localhost:10000.
 // ═══════════════════════════════════════════════════════
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:8000'
+const API_BASE = window.location.hostname === '0.0.0.0'
+  ? 'http://0.0.0.0:10000'
   : window.location.origin;
 
 // ═══════════════════════════════════════════════════════
