@@ -1,6 +1,8 @@
 import motor.motor_asyncio
 from pymongo.server_api import ServerApi
 from app.core.config import settings
+import certifi
+
 
 client: motor.motor_asyncio.AsyncIOMotorClient = None
 db = None
@@ -11,6 +13,7 @@ async def connect_db():
     client = motor.motor_asyncio.AsyncIOMotorClient(
         settings.MONGODB_URI,
         server_api=ServerApi("1"),
+        tlsCAFile=certifi.where(),
         #tls=True,
         #tlsAllowInvalidCertificates=False,
     )
