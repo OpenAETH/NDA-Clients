@@ -3,26 +3,27 @@ from pymongo.server_api import ServerApi
 from app.core.config import settings
 import certifi
 
-
-client: motor.motor_asyncio.AsyncIOMotorClient = None
-db = 'agraound-nda'
+client = None
+db = None
 
 
 async def connect_db():
     global client, db
+
     client = motor.motor_asyncio.AsyncIOMotorClient(
         settings.MONGODB_URI,
         server_api=ServerApi("1"),
+        tls=True,
         tlsCAFile=certifi.where(),
-        #tls=True,
-        #tlsAllowInvalidCertificates=False,
+        serverSelectionTimeoutMS=5000,
     )
+
     try:
         await client.admin.command("ping")
-        print(f"[DB] Connected to MongoDB Atlas — database: {settings.MONGODB_DB}")
+        print(f"[DB] Connected — db: {settings.MONGODB_DB}")
     except Exception as e:
         print(f"[DB] Connection failed: {e}")
-        # No hacer raise aquí — permite que el servidor arranque igual
+
     db = client[settings.MONGODB_DB]
 
 
