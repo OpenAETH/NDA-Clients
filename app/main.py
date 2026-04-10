@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from pathlib import Path
-
+import os
 from app.core.database import connect_db, close_db
 from app.routers import products, engagements, payments
 
