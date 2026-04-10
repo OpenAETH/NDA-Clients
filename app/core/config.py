@@ -5,8 +5,8 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # ── MongoDB Atlas ────────────────────────────────────────────
     # mongodb+srv://gntprsnl_db_user:<password>@cluster0.0qrrq1w.mongodb.net/?appName=Cluster0
-    MONGODB_URI: str = "mongodb://localhost:27017"
-    MONGODB_DB:  str = "agraound"
+    MONGODB_URI: str = "mongodb+srv://gntprsnl_db_user:uYnfCzedDVhn6QDK@cluster0.0qrrq1w.mongodb.net/?appName=Cluster0"
+    MONGODB_DB:  str = "agraound-nda"
 
     # ── Resend ───────────────────────────────────────────────────
     RESEND_API_KEY:    str = ""
