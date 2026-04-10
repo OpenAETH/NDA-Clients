@@ -628,7 +628,14 @@ async function submitForm() {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Error ${res.status}`);
+      // err.detail puede ser string (HTTPException) o array (validación Pydantic 422)
+      let msg;
+      if (Array.isArray(err.detail)) {
+        msg = err.detail.map(e => e.msg || JSON.stringify(e)).join(' | ');
+      } else {
+        msg = err.detail || err.message || `Error ${res.status}`;
+      }
+      throw new Error(msg);
     }
 
     const data = await res.json();
@@ -658,7 +665,8 @@ async function submitForm() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
   } catch (err) {
-    errDiv.textContent = `Error al enviar: ${err.message}. Intentá de nuevo o descargá la vista previa local.`;
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
+    errDiv.textContent = `Error al enviar: ${msg}. Intentá de nuevo o descargá la vista previa local.`;
     errDiv.style.display = 'block';
     btn.disabled = false;
     label.innerHTML = '&#10003; Firmar y enviar NDA';
