@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NDA & Engagement — Agraound Consulting / AETHERYON Systems</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --brand: #1A1A2E; --accent: #E94560; --accent2: #0F3460;
+    --ok: #2e7d52; --ok-bg: #eaf3de;
+    --warn: #7a4f00; --warn-bg: #faeeda;
+    --err: #9b1c1c; --err-bg: #fde8e8;
+    --border: #e0e3ec; --muted: #6b7280;
+    --bg: #f5f6fa; --card: #ffffff; --radius: 10px;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--brand); line-height: 1.6; }
+
+  .page-header { background: var(--brand); color: white; padding: 2rem 1.5rem; text-align: center; }
+  .page-header .logo-line { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; margin-bottom: 0.5rem; }
+  .page-header h1 { font-size: 1.6rem; font-weight: 600; margin-bottom: 0.3rem; }
+  .page-header p { opacity: 0.7; font-size: 0.9rem; }
+  .accent-bar { height: 4px; background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%); }
+
+  .container { max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem; margin-bottom: 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .card-title { font-size: 1rem; font-weight: 600; color: var(--brand); margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; }
+  .step-badge { background: var(--accent); color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  .form-row { display: grid; gap: 1rem; margin-bottom: 1rem; }
+  .form-row.two { grid-template-columns: 1fr 1fr; }
+  @media(max-width:560px){ .form-row.two { grid-template-columns: 1fr; } }
+
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  label span.req { color: var(--accent); }
+  input[type=text], input[type=email], input[type=tel], select, textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px;
+    font-size: 14px; color: var(--brand); background: white; outline: none; transition: border 0.15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent2); box-shadow: 0 0 0 3px rgba(15,52,96,0.08); }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* Products */
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+  .product-card { border: 2px solid var(--border); border-radius: 8px; padding: 1rem; cursor: pointer; transition: all 0.15s; position: relative; }
+  .product-card:hover { border-color: var(--accent2); }
+  .product-card.selected { border-color: var(--accent); background: #fff5f7; }
+  .product-card .prod-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .product-card .prod-desc { font-size: 12px; color: var(--muted); margin-bottom: 8px; line-height: 1.4; }
+  .product-card .prod-price { font-size: 18px; font-weight: 700; color: var(--accent); }
+  .product-card .prod-badge { position: absolute; top: 8px; right: 8px; font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 600; }
+  .badge-std    { background: #e1f5ee; color: #0f6e56; }
+  .badge-prem   { background: #faeeda; color: #854f0b; }
+  .badge-custom { background: #eeedfe; color: #3c3489; }
+  .custom-row { margin-top: 0.75rem; padding: 1rem; background: #f8f8ff; border-radius: 8px; border: 1px dashed var(--border); display: none; }
+  .custom-row.visible { display: block; }
+
+  /* Skeleton loader */
+  .skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 8px; }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  .skel-card { height: 110px; }
+
+  /* Payment */
+  .payment-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.25rem; }
+  @media(max-width:480px){ .payment-modes { grid-template-columns: 1fr; } }
+  .payment-mode { border: 2px solid var(--border); border-radius: 8px; padding: 1rem; cursor: pointer; transition: all 0.15s; text-align: center; }
+  .payment-mode:hover { border-color: var(--accent2); }
+  .payment-mode.selected { border-color: var(--accent2); background: #f0f4ff; }
+  .payment-mode .pm-title { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+  .payment-mode .pm-desc { font-size: 11px; color: var(--muted); }
+  .payment-mode .pm-discount { font-size: 11px; color: var(--ok); font-weight: 600; margin-top: 4px; }
+
+  .milestone-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1rem; }
+  .milestone-table th { background: var(--brand); color: white; padding: 8px 12px; text-align: left; font-weight: 500; }
+  .milestone-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .milestone-table .total-row td { font-weight: 700; background: #f5f6fa; }
+
+  .total-display { background: var(--brand); color: white; border-radius: 8px; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; }
+  .total-display .td-label { font-size: 12px; opacity: 0.7; }
+  .total-display .td-amount { font-size: 22px; font-weight: 700; color: #ff8fa3; }
+
+  .pm-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
+  .pm-tab { padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.15s; background: white; }
+  .pm-tab.active { background: var(--accent2); color: white; border-color: var(--accent2); }
+  .pm-panel { display: none; font-size: 13px; }
+  .pm-panel.visible { display: block; }
+  .pm-detail { background: #f5f6fa; border-radius: 7px; padding: 0.75rem 1rem; }
+  .pm-detail .pm-field { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .pm-detail .pm-field:last-child { border-bottom: none; }
+  .pm-detail .pm-field span:first-child { color: var(--muted); }
+  .pm-detail .pm-field span:last-child { font-weight: 500; font-family: monospace; font-size: 12px; }
+
+  /* NDA */
+  .nda-scroll { background: #fafafa; border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.5rem; max-height: 320px; overflow-y: auto; font-size: 13px; line-height: 1.7; color: #333; }
+  .nda-scroll h3 { font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 1rem; color: var(--brand); }
+  .nda-scroll .clause { margin-bottom: 0.75rem; }
+  .fill { background: #fff3cd; padding: 1px 4px; border-radius: 3px; font-style: italic; }
+
+  /* Signature */
+  .sig-modes { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+  .sig-mode-btn { flex: 1; padding: 7px; border: 1px solid var(--border); border-radius: 7px; cursor: pointer; font-size: 13px; background: white; transition: all 0.15s; text-align: center; }
+  .sig-mode-btn.active { background: var(--brand); color: white; border-color: var(--brand); }
+  #sig-canvas { width: 100%; height: 140px; border: 1px solid var(--border); border-radius: 8px; cursor: crosshair; touch-action: none; background: white; display: block; }
+  .canvas-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  .btn-sm { padding: 5px 14px; font-size: 12px; border: 1px solid var(--border); border-radius: 20px; cursor: pointer; background: white; }
+  .btn-sm:hover { background: #f5f6fa; }
+  #type-container { display: none; }
+  #typed-sig-input { font-size: 24px; font-style: italic; padding: 12px; font-family: Georgia, serif; }
+  #typed-preview { font-size: 32px; font-style: italic; font-family: 'Brush Script MT', cursive; color: var(--brand); padding: 0.5rem 0; min-height: 50px; border-bottom: 1px solid var(--border); }
+
+  /* Upload */
+  .upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all 0.15s; background: #fafafa; }
+  .upload-zone:hover { border-color: var(--accent); background: #fff5f7; }
+  .upload-zone .upload-icon { font-size: 28px; margin-bottom: 0.5rem; color: var(--muted); }
+  .upload-zone p { font-size: 13px; color: var(--muted); }
+  #upload-preview { margin-top: 0.75rem; font-size: 12px; color: var(--ok); font-weight: 500; display: none; }
+
+  /* Alerts */
+  .alert { padding: 0.75rem 1rem; border-radius: 7px; font-size: 13px; margin-bottom: 1rem; }
+  .alert.ok  { background: var(--ok-bg);  color: var(--ok);  border: 1px solid #b8ddc8; }
+  .alert.warn{ background: var(--warn-bg);color: var(--warn); border: 1px solid #f5c88a; }
+  .alert.err { background: var(--err-bg); color: var(--err);  border: 1px solid #f5c8c8; }
+
+  /* Buttons */
+  .btn-primary { width: 100%; padding: 13px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.15s; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-primary:hover:not(:disabled) { background: #c73650; }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-secondary { width: 100%; padding: 11px; background: white; color: var(--brand); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .btn-secondary:hover { background: #f5f6fa; }
+
+  .agree-row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 1rem; }
+  .agree-row input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--accent2); }
+  .agree-row label { font-size: 13px; color: #444; text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+  .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+  .info-text { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  /* Spinner */
+  .spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Success */
+  #success-screen { display: none; text-align: center; padding: 3rem 1rem; }
+  #success-screen .success-icon { font-size: 52px; margin-bottom: 1rem; }
+  #success-screen h2 { font-size: 1.4rem; margin-bottom: 0.5rem; }
+  #success-screen p { color: var(--muted); margin-bottom: 1.5rem; }
+  .download-btn { display: inline-block; padding: 12px 28px; background: var(--ok); color: white; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; border: none; margin: 0.25rem; text-decoration: none; }
+  .ref-code { font-family: monospace; background: #f0f0f0; padding: 4px 10px; border-radius: 5px; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="logo-line">Agraound Consulting &nbsp;/&nbsp; AETHERYON Systems</div>
+  <h1>Non-Disclosure &amp; Engagement Agreement</h1>
+  <p>Completá el formulario para iniciar el proyecto</p>
+</div>
+<div class="accent-bar"></div>
+
+<div class="container" id="main-form">
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">1</span> Datos del cliente</div>
+    <div class="form-row two">
+      <div><label>Nombre completo <span class="req">*</span></label><input type="text" id="client-name" placeholder="Ej: Juan García" oninput="updateNdaFills()"></div>
+      <div><label>Empresa / Organización</label><input type="text" id="client-company" placeholder="Ej: TechCorp S.A."></div>
+    </div>
+    <div class="form-row two">
+      <div><label>Email de contacto <span class="req">*</span></label><input type="email" id="client-email" placeholder="juan@empresa.com"></div>
+      <div><label>Teléfono / WhatsApp</label><input type="tel" id="client-phone" placeholder="+54 9 11 xxxxxxxx"></div>
+    </div>
+    <div class="form-row">
+      <div><label>País / Jurisdicción</label><input type="text" id="client-country" placeholder="Argentina" oninput="updateNdaFills()"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">2</span> Selección de producto / servicio</div>
+    <div id="product-grid" class="product-grid">
+      <!-- Skeleton while loading -->
+      <div class="skeleton skel-card"></div>
+      <div class="skeleton skel-card"></div>
+      <div class="skeleton skel-card"></div>
+    </div>
+    <div id="api-error" class="alert err" style="display:none;">
+      No se pudo cargar el catálogo de productos. Por favor recargá la página.
+    </div>
+    <div class="custom-row" id="custom-row">
+      <label>Descripción del requerimiento personalizado <span class="req">*</span></label>
+      <textarea id="custom-desc" placeholder="Describí qué necesitás: funcionalidades, integraciones, tecnologías, plazos, etc."></textarea>
+      <div class="info-text">El precio se calculará y confirmará antes de iniciar.</div>
+    </div>
+    <div id="product-error" class="alert warn" style="display:none;">Por favor seleccioná un producto.</div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">3</span> Modalidad y método de pago</div>
+    <div class="payment-modes">
+      <div class="payment-mode selected" id="mode-hitos" onclick="selectPaymentMode('hitos')">
+        <div class="pm-title">Por hitos</div>
+        <div class="pm-desc">3 pagos distribuidos según avance</div>
+      </div>
+      <div class="payment-mode" id="mode-anticipado" onclick="selectPaymentMode('anticipado')">
+        <div class="pm-title">Pago anticipado</div>
+        <div class="pm-desc">Un solo pago al inicio</div>
+        <div class="pm-discount" id="discount-label">Descuento disponible</div>
+      </div>
+    </div>
+    <table class="milestone-table"><thead><tr><th>Hito / Concepto</th><th>%</th><th>Monto (USD)</th><th>Cuándo</th></tr></thead>
+      <tbody id="milestone-body"></tbody>
+    </table>
+    <div class="total-display">
+      <div><div class="td-label">TOTAL A PAGAR</div><div class="td-label" id="total-mode-label">Pago por hitos</div></div>
+      <div class="td-amount" id="total-display">$0</div>
+    </div>
+    <div class="divider"></div>
+    <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);">Método de pago preferido</div>
+    <div class="pm-tabs">
+      <div class="pm-tab active" onclick="switchPayTab('transfer')">Transferencia bancaria</div>
+      <div class="pm-tab" onclick="switchPayTab('usdt')">USDT</div>
+      <div class="pm-tab" onclick="switchPayTab('btc')">BTC</div>
+      <div class="pm-tab" onclick="switchPayTab('eth')">ETH</div>
+    </div>
+    <div id="tab-transfer" class="pm-panel visible"><div class="pm-detail">
+      <div class="pm-field"><span>Titular</span><span>[Nombre / Empresa]</span></div>
+      <div class="pm-field"><span>Banco</span><span>[Nombre del banco]</span></div>
+      <div class="pm-field"><span>SWIFT / IBAN</span><span>[Código SWIFT]</span></div>
+    </div></div>
+    <div id="tab-usdt" class="pm-panel"><div class="pm-detail">
+      <div class="pm-field"><span>Red</span><span>TRC-20 / ERC-20 (especificar)</span></div>
+      <div class="pm-field"><span>Wallet</span><span>[Dirección USDT]</span></div>
+    </div></div>
+    <div id="tab-btc" class="pm-panel"><div class="pm-detail">
+      <div class="pm-field"><span>Red</span><span>Bitcoin (BTC)</span></div>
+      <div class="pm-field"><span>Wallet</span><span>[Dirección BTC]</span></div>
+    </div></div>
+    <div id="tab-eth" class="pm-panel"><div class="pm-detail">
+      <div class="pm-field"><span>Red</span><span>ERC-20 / Ethereum</span></div>
+      <div class="pm-field"><span>Wallet</span><span>[Dirección ETH]</span></div>
+    </div></div>
+    <div class="info-text" style="margin-top:0.75rem;">El pago inicial activa el proyecto. Adjuntá el comprobante en el siguiente paso.</div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">4</span> Comprobante de pago inicial</div>
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
+         ondragover="event.preventDefault();this.classList.add('dragover')"
+         ondragleave="this.classList.remove('dragover')"
+         ondrop="handleDrop(event)">
+      <div class="upload-icon">&#8679;</div>
+      <p><strong>Hacer clic o arrastrar archivo</strong></p>
+      <p>PDF, JPG, PNG hasta 10 MB</p>
+      <input type="file" id="file-input" style="display:none" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(event)">
+    </div>
+    <div id="upload-preview"></div>
+    <div class="info-text">Podés adjuntarlo ahora o enviarlo por email después de firmar.</div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">5</span> Leer y aceptar el NDA</div>
+    <div class="nda-scroll">
+      <h3>NON-DISCLOSURE &amp; ENGAGEMENT AGREEMENT</h3>
+      <p style="margin-bottom:0.75rem;font-size:12px;text-align:center;color:#666;">
+        Este acuerdo es celebrado entre <strong>Agraound Consulting / AETHERYON Systems</strong> ("Proveedor")
+        y <strong id="nda-client-fill" class="fill">[Nombre del Cliente]</strong> ("Cliente"),
+        con fecha <strong id="nda-date-fill" class="fill">[Fecha]</strong>.
+      </p>
+      <div class="clause"><strong>1. Objeto.</strong> Evaluación, desarrollo e implementación de sistemas de datos, APIs y/o código según la propuesta aceptada.</div>
+      <div class="clause"><strong>2. Información Confidencial.</strong> Incluye datasets, bases de código, infraestructura, credenciales e información de negocio compartida entre las partes.</div>
+      <div class="clause"><strong>3. Obligaciones.</strong> Uso exclusivo para los fines del proyecto. Prohibida toda divulgación. Aplicar medidas razonables de protección.</div>
+      <div class="clause"><strong>4. Acceso &amp; Seguridad.</strong> Acceso de solo lectura cuando sea posible. Sin evasión de seguridad. Las vulnerabilidades serán reportadas.</div>
+      <div class="clause"><strong>5. Exclusiones.</strong> Información pública, conocimiento previo, desarrollo independiente o divulgación legal obligatoria.</div>
+      <div class="clause"><strong>6. Vigencia.</strong> Válido por 2 años. La confidencialidad persiste tras la terminación del acuerdo.</div>
+      <div class="clause"><strong>7. Manejo de Datos.</strong> Usados únicamente durante el proyecto. Eliminados bajo solicitud. Sin retención innecesaria.</div>
+      <div class="clause"><strong>8. Condiciones de Pago.</strong> 40% al firmar, 30% en hito intermedio, 30% en entrega final. El trabajo comienza después del pago inicial.</div>
+      <div class="clause"><strong>9. Sin Transferencia de PI.</strong> No se transfieren derechos de propiedad intelectual salvo acuerdo escrito adicional.</div>
+      <div class="clause"><strong>10. Limitación de Responsabilidad.</strong> Sin responsabilidad por daños indirectos o consecuentes.</div>
+      <div class="clause"><strong>11. Ley Aplicable.</strong> <strong id="nda-juris-fill" class="fill">[Jurisdicción a definir]</strong>.</div>
+      <div class="clause"><strong>12. Aceptación.</strong> Este acuerdo es válido mediante firma digital. La ejecución del pago inicial implica aceptación total.</div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">6</span> Firma digital</div>
+    <div class="sig-modes">
+      <button class="sig-mode-btn active" id="btn-canvas" onclick="switchSigMode('canvas')">Firma a mano</button>
+      <button class="sig-mode-btn" id="btn-type" onclick="switchSigMode('type')">Firma escrita</button>
+    </div>
+    <div id="canvas-container">
+      <canvas id="sig-canvas" width="700" height="140"></canvas>
+      <div class="canvas-actions">
+        <button class="btn-sm" onclick="clearCanvas()">Borrar</button>
+        <span class="info-text" style="align-self:center;">Dibujá tu firma con el mouse o dedo</span>
+      </div>
+    </div>
+    <div id="type-container">
+      <label>Escribí tu nombre completo</label>
+      <input type="text" id="typed-sig-input" placeholder="Tu nombre..." oninput="updateTypedSig(this.value)">
+      <div id="typed-preview"></div>
+    </div>
+    <div id="sig-error" class="alert warn" style="display:none;">Por favor agregá tu firma.</div>
+  </div>
+
+  <!-- STEP 7 -->
+  <div class="card">
+    <div class="card-title"><span class="step-badge">7</span> Aceptar y enviar</div>
+    <div class="agree-row">
+      <input type="checkbox" id="agree-nda">
+      <label for="agree-nda">He leído y acepto el Acuerdo de Confidencialidad y las condiciones de pago indicadas arriba.</label>
+    </div>
+    <div class="agree-row">
+      <input type="checkbox" id="agree-payment">
+      <label for="agree-payment">Entiendo que el trabajo comienza luego de confirmar el pago inicial.</label>
+    </div>
+    <div id="submit-error" class="alert err" style="display:none;"></div>
+    <button class="btn-primary" id="submit-btn" onclick="submitForm()">
+      <span id="submit-label">&#10003; Firmar y enviar NDA</span>
+    </button>
+    <button class="btn-secondary" onclick="downloadLocalPreview()">&#10515; Descargar vista previa local (sin enviar)</button>
+  </div>
+
+</div>
+
+<!-- Success -->
+<div class="container" id="success-screen">
+  <div class="success-icon">&#10003;</div>
+  <h2>¡NDA firmado y enviado!</h2>
+  <p>Revisá tu email — te enviamos el PDF firmado.<br>
+     Tu número de referencia: <span class="ref-code" id="ref-code">—</span></p>
+  <button class="download-btn" id="download-local-btn">&#8681; Descargar copia local del PDF</button>
+  <p style="margin-top:1.5rem;" class="info-text">
+    Nos pondremos en contacto para confirmar el pago y activar el proyecto.
+  </p>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG — la URL base de la API se detecta automáticamente
+// En producción (Render), el frontend y la API comparten el mismo origen.
+// En dev local, apunta a localhost:8000.
+// ═══════════════════════════════════════════════════════
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:8000'
+  : window.location.origin;
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let PRODUCTS      = [];
+let selectedProd  = null;
+let paymentMode   = 'hitos';
+let sigMode       = 'canvas';
+let canvasSigned  = false;
+let uploadedFile  = null;
+let engagementId  = null;
+let localPdfBlob  = null;
+
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  updateNdaFills();
+  initCanvas();
+  loadProducts();
+});
+
+// ═══════════════════════════════════════════════════════
+// LOAD PRODUCTS FROM API
+// ═══════════════════════════════════════════════════════
+async function loadProducts() {
+  try {
+    const res = await fetch(`${API_BASE}/api/products`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    PRODUCTS = await res.json();
+    renderProducts();
+  } catch (err) {
+    console.error('[Products] Load failed:', err);
+    document.getElementById('product-grid').innerHTML = '';
+    document.getElementById('api-error').style.display = 'block';
+  }
+}
+
+function renderProducts() {
+  const grid = document.getElementById('product-grid');
+  grid.innerHTML = '';
+  PRODUCTS.forEach(p => {
+    const badgeClass = { std: 'badge-std', prem: 'badge-prem', custom: 'badge-custom' }[p.badge_type] || 'badge-std';
+    const priceStr = p.base_price ? `$${Number(p.base_price).toLocaleString()}` : 'A cotizar';
+    const div = document.createElement('div');
+    div.className = 'product-card';
+    div.id = 'prod-' + p.code;
+    div.onclick = () => selectProduct(p.code);
+    div.innerHTML = `
+      <div class="prod-badge ${badgeClass}">${p.badge_label || ''}</div>
+      <div class="prod-name">${p.name}</div>
+      <div class="prod-desc">${p.description || ''}</div>
+      <div class="prod-price">${priceStr}</div>`;
+    grid.appendChild(div);
+  });
+}
+
+function selectProduct(code) {
+  selectedProd = PRODUCTS.find(p => p.code === code);
+  document.querySelectorAll('.product-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('prod-' + code)?.classList.add('selected');
+  document.getElementById('custom-row').classList.toggle('visible', code === 'CUSTOM');
+  document.getElementById('product-error').style.display = 'none';
+  updateMilestones();
+}
+
+// ═══════════════════════════════════════════════════════
+// PAYMENT CALCULATOR
+// ═══════════════════════════════════════════════════════
+function selectPaymentMode(mode) {
+  paymentMode = mode;
+  document.getElementById('mode-hitos').classList.toggle('selected', mode === 'hitos');
+  document.getElementById('mode-anticipado').classList.toggle('selected', mode === 'anticipado');
+  document.getElementById('total-mode-label').textContent = mode === 'hitos' ? 'Pago por hitos' : 'Pago único anticipado';
+  updateMilestones();
+}
+
+function updateMilestones() {
+  const tbody = document.getElementById('milestone-body');
+  tbody.innerHTML = '';
+  if (!selectedProd) { document.getElementById('total-display').textContent = '$0'; return; }
+
+  const base = selectedProd.base_price;
+  const discPct = paymentMode === 'anticipado' ? (selectedProd.discount_pct || 0) : 0;
+  document.getElementById('discount-label').textContent =
+    selectedProd.discount_pct ? `${selectedProd.discount_pct}% de descuento` : 'Sin descuento adicional';
+
+  if (!base) {
+    document.getElementById('total-display').textContent = 'A cotizar';
+    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--muted);font-style:italic;">Precio a definir según alcance.</td></tr>`;
+    return;
+  }
+
+  const totalFinal = Math.round(base * (1 - discPct / 100));
+  const milestones = selectedProd.milestones || [];
+
+  if (paymentMode === 'hitos') {
+    milestones.forEach((m, i) => {
+      const amt = Math.round(base * m.pct / 100);
+      const tr = document.createElement('tr');
+      if (i === 0) tr.style.background = '#fff5f7';
+      tr.innerHTML = `<td>Hito ${i+1} — ${m.label}</td><td>${m.pct}%</td><td><strong>$${amt.toLocaleString()}</strong></td><td>${['Al firmar','Al avanzar','Al finalizar'][i] || ''}</td>`;
+      tbody.appendChild(tr);
+    });
+    const tr = document.createElement('tr');
+    tr.className = 'total-row';
+    tr.innerHTML = `<td colspan="2"><strong>TOTAL</strong></td><td colspan="2"><strong>$${base.toLocaleString()}</strong></td>`;
+    tbody.appendChild(tr);
+    document.getElementById('total-display').textContent = `$${base.toLocaleString()}`;
+  } else {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>Pago único anticipado</td><td>100%</td><td style="color:var(--accent);font-weight:700;">$${totalFinal.toLocaleString()}</td><td>Al firmar</td>`;
+    tbody.appendChild(tr);
+    if (discPct > 0) {
+      const saved = base - totalFinal;
+      const tr2 = document.createElement('tr');
+      tr2.innerHTML = `<td colspan="4" style="color:var(--ok);font-size:12px;">Ahorrás $${saved.toLocaleString()} USD (${discPct}% de descuento)</td>`;
+      tbody.appendChild(tr2);
+    }
+    document.getElementById('total-display').textContent = `$${totalFinal.toLocaleString()}`;
+  }
+}
+
+function switchPayTab(tab) {
+  ['transfer','usdt','btc','eth'].forEach((t, i) => {
+    document.querySelectorAll('.pm-tab')[i].classList.toggle('active', t === tab);
+    document.getElementById('tab-' + t).classList.toggle('visible', t === tab);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// NDA DYNAMIC FILLS
+// ═══════════════════════════════════════════════════════
+function updateNdaFills() {
+  const name    = document.getElementById('client-name').value || '[Nombre del Cliente]';
+  const country = document.getElementById('client-country').value || '[Jurisdicción a definir]';
+  const today   = new Date().toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('nda-client-fill').textContent = name;
+  document.getElementById('nda-date-fill').textContent   = today;
+  document.getElementById('nda-juris-fill').textContent  = country;
+}
+
+// ═══════════════════════════════════════════════════════
+// FILE UPLOAD
+// ═══════════════════════════════════════════════════════
+function handleFileSelect(e) { if (e.target.files[0]) setFile(e.target.files[0]); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('dragover');
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+}
+function setFile(f) {
+  uploadedFile = f;
+  const p = document.getElementById('upload-preview');
+  p.style.display = 'block';
+  p.innerHTML = `&#10003; <strong>${f.name}</strong> (${(f.size/1024).toFixed(0)} KB)`;
+}
+
+// ═══════════════════════════════════════════════════════
+// SIGNATURE CANVAS
+// ═══════════════════════════════════════════════════════
+let canvas, ctx, drawing = false, lastX, lastY;
+
+function initCanvas() {
+  canvas = document.getElementById('sig-canvas');
+  ctx    = canvas.getContext('2d');
+  ctx.strokeStyle = '#1A1A2E'; ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  const pos = e => {
+    const r = canvas.getBoundingClientRect();
+    const sx = canvas.width / r.width, sy = canvas.height / r.height;
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    return [(cx - r.left) * sx, (cy - r.top) * sy];
+  };
+
+  canvas.addEventListener('mousedown',  e => { drawing = true; [lastX,lastY] = pos(e); });
+  canvas.addEventListener('mousemove',  e => { if (!drawing) return; const [x,y]=pos(e); ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(x,y);ctx.stroke();[lastX,lastY]=[x,y];canvasSigned=true; });
+  canvas.addEventListener('mouseup',    () => drawing = false);
+  canvas.addEventListener('mouseleave', () => drawing = false);
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing=true;[lastX,lastY]=pos(e); }, {passive:false});
+  canvas.addEventListener('touchmove',  e => { e.preventDefault(); if(!drawing)return;const[x,y]=pos(e);ctx.beginPath();ctx.moveTo(lastX,lastY);ctx.lineTo(x,y);ctx.stroke();[lastX,lastY]=[x,y];canvasSigned=true; }, {passive:false});
+  canvas.addEventListener('touchend',   () => drawing = false);
+}
+
+function clearCanvas() { ctx.clearRect(0,0,canvas.width,canvas.height); canvasSigned=false; }
+
+function switchSigMode(mode) {
+  sigMode = mode;
+  document.getElementById('canvas-container').style.display = mode === 'canvas' ? 'block' : 'none';
+  document.getElementById('type-container').style.display   = mode === 'type'   ? 'block' : 'none';
+  document.getElementById('btn-canvas').classList.toggle('active', mode === 'canvas');
+  document.getElementById('btn-type').classList.toggle('active',   mode === 'type');
+}
+
+function updateTypedSig(v) { document.getElementById('typed-preview').textContent = v; }
+
+function getSignatureDataURL() {
+  if (sigMode === 'canvas') {
+    if (!canvasSigned) return null;
+    return canvas.toDataURL('image/png');
+  }
+  const txt = document.getElementById('typed-sig-input').value.trim();
+  if (!txt) return null;
+  const c = document.createElement('canvas');
+  c.width=500; c.height=100;
+  const x=c.getContext('2d');
+  x.fillStyle='white'; x.fillRect(0,0,500,100);
+  x.fillStyle='#1A1A2E'; x.font="italic 52px Georgia,serif";
+  x.textBaseline='middle'; x.fillText(txt,20,55);
+  return c.toDataURL('image/png');
+}
+
+// ═══════════════════════════════════════════════════════
+// FORM SUBMIT → API
+// ═══════════════════════════════════════════════════════
+async function submitForm() {
+  const errDiv = document.getElementById('submit-error');
+  errDiv.style.display = 'none';
+
+  // Client-side validation
+  const errs = [];
+  if (!document.getElementById('client-name').value.trim())  errs.push('Nombre obligatorio.');
+  if (!document.getElementById('client-email').value.trim()) errs.push('Email obligatorio.');
+  if (!selectedProd) {
+    errs.push('Seleccioná un producto.');
+    document.getElementById('product-error').style.display = 'block';
+  }
+  const sigData = getSignatureDataURL();
+  if (!sigData) {
+    errs.push('Agregá tu firma.');
+    document.getElementById('sig-error').style.display = 'block';
+  } else {
+    document.getElementById('sig-error').style.display = 'none';
+  }
+  if (!document.getElementById('agree-nda').checked)     errs.push('Debés aceptar el NDA.');
+  if (!document.getElementById('agree-payment').checked) errs.push('Debés confirmar las condiciones de pago.');
+
+  if (errs.length) {
+    errDiv.textContent = errs.join(' ');
+    errDiv.style.display = 'block';
+    errDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+
+  // Disable button & show spinner
+  const btn   = document.getElementById('submit-btn');
+  const label = document.getElementById('submit-label');
+  btn.disabled = true;
+  label.innerHTML = '<span class="spinner"></span> Enviando...';
+
+  try {
+    // 1 ── POST engagement (NDA + firma)
+    const payload = {
+      client: {
+        full_name:    document.getElementById('client-name').value.trim(),
+        company:      document.getElementById('client-company').value.trim() || null,
+        email:        document.getElementById('client-email').value.trim(),
+        phone:        document.getElementById('client-phone').value.trim() || null,
+        country:      document.getElementById('client-country').value.trim() || null,
+      },
+      product_code:        selectedProd.code,
+      payment_mode:        paymentMode,
+      custom_description:  document.getElementById('custom-desc').value.trim() || null,
+      signature_type:      sigMode,
+      signature_data:      sigData,
+      user_agent:          navigator.userAgent,
+    };
+
+    const res = await fetch(`${API_BASE}/api/engagements`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Error ${res.status}`);
+    }
+
+    const data = await res.json();
+    engagementId = data.engagement_id;
+
+    // 2 ── Upload receipt if provided
+    if (uploadedFile && engagementId) {
+      label.innerHTML = '<span class="spinner"></span> Subiendo comprobante...';
+      const fd = new FormData();
+      fd.append('file', uploadedFile);
+      fd.append('milestone_n', '1');
+      fd.append('method', document.querySelector('.pm-tab.active')?.textContent?.toLowerCase() || 'bank_transfer');
+      await fetch(`${API_BASE}/api/payments/${engagementId}/receipt`, {
+        method: 'POST',
+        body:   fd,
+      });
+    }
+
+    // 3 ── Generate local PDF copy for immediate download
+    localPdfBlob = generateLocalPdf(sigData);
+
+    // Show success
+    document.getElementById('main-form').style.display   = 'none';
+    document.getElementById('success-screen').style.display = 'block';
+    document.getElementById('ref-code').textContent = engagementId?.slice(-12).toUpperCase() || '—';
+    document.getElementById('download-local-btn').onclick = downloadLocalCopy;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  } catch (err) {
+    errDiv.textContent = `Error al enviar: ${err.message}. Intentá de nuevo o descargá la vista previa local.`;
+    errDiv.style.display = 'block';
+    btn.disabled = false;
+    label.innerHTML = '&#10003; Firmar y enviar NDA';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// LOCAL PDF (jsPDF — copia de respaldo inmediata)
+// El PDF definitivo lo genera el backend con ReportLab.
+// Este es solo para que el cliente tenga algo al instante.
+// ═══════════════════════════════════════════════════════
+function generateLocalPdf(sigDataUrl) {
+  const { jsPDF } = window.jspdf;
+  const doc  = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W=210, M=18;
+  let y=0;
+
+  doc.setFillColor(26,26,46); doc.rect(0,0,W,32,'F');
+  doc.setFillColor(233,69,96); doc.rect(0,32,W,2.5,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(180,180,220);
+  doc.text('AGRAOUND CONSULTING / AETHERYON SYSTEMS', W/2,10,{align:'center'});
+  doc.setFontSize(13); doc.setTextColor(255,255,255);
+  doc.text('NON-DISCLOSURE & ENGAGEMENT AGREEMENT', W/2,20,{align:'center'});
+  doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,220);
+  doc.text('Copia local — el PDF oficial fue enviado por email', W/2,27,{align:'center'});
+
+  y=42;
+  const name    = document.getElementById('client-name').value || 'N/D';
+  const email   = document.getElementById('client-email').value || 'N/D';
+  const company = document.getElementById('client-company').value || '';
+  const country = document.getElementById('client-country').value || 'N/D';
+  const today   = new Date().toLocaleDateString('es-AR',{year:'numeric',month:'long',day:'numeric'});
+  const prodName= selectedProd ? `${selectedProd.name} — ${selectedProd.full_name||''}` : 'N/D';
+  const totalAmt= document.getElementById('total-display').textContent;
+  const modeLabel= paymentMode==='hitos'?'Pago por hitos':'Pago único anticipado';
+
+  doc.setFillColor(245,246,250); doc.roundedRect(M,y,W-M*2,38,3,3,'F');
+  const fields=[['Cliente',name+(company?` — ${company}`:'')] ,['Email',email],['País',country],['Producto',prodName],['Modalidad',modeLabel],['Total',totalAmt+' USD'],['Fecha de firma',today]];
+  let fy=y+7;
+  fields.forEach(([l,v])=>{
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(80,80,120); doc.text(l+':',M+4,fy);
+    doc.setFont('helvetica','normal'); doc.setTextColor(30,30,50); doc.text(String(v).slice(0,65),M+46,fy);
+    fy+=5.5;
+  });
+
+  y+=46;
+  doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(26,26,46);
+  doc.text('NON-DISCLOSURE & ENGAGEMENT AGREEMENT',W/2,y,{align:'center'});
+  y+=6;
+
+  const clauses=[
+    ['1. Objeto.','Evaluación, desarrollo e implementación de sistemas de datos, APIs y/o código según la propuesta aceptada.'],
+    ['2. Información Confidencial.','Incluye datasets, bases de código, infraestructura, credenciales e información de negocio compartida entre las partes.'],
+    ['3. Obligaciones.','Uso exclusivo para los fines del proyecto. Prohibida toda divulgación. Aplicar medidas razonables de protección.'],
+    ['4. Acceso & Seguridad.','Acceso de solo lectura cuando sea posible. Sin evasión de seguridad. Las vulnerabilidades serán reportadas.'],
+    ['5. Exclusiones.','Información pública, conocimiento previo, desarrollo independiente o divulgación legal obligatoria.'],
+    ['6. Vigencia.','Válido por 2 años. La confidencialidad persiste tras la terminación del acuerdo.'],
+    ['7. Manejo de Datos.','Usados únicamente durante el proyecto. Eliminados bajo solicitud. Sin retención innecesaria.'],
+    ['8. Condiciones de Pago.','40% al firmar, 30% en hito intermedio, 30% en entrega final. El trabajo comienza después del pago inicial.'],
+    ['9. Sin Transferencia de PI.','No se transfieren derechos de propiedad intelectual salvo acuerdo escrito adicional.'],
+    ['10. Limitación de Responsabilidad.','Sin responsabilidad por daños indirectos o consecuentes.'],
+    ['11. Ley Aplicable.',country],
+    ['12. Aceptación.','Este acuerdo es válido mediante firma digital. La ejecución del pago inicial implica aceptación total.'],
+  ];
+  clauses.forEach(([num,text])=>{
+    if(y>240){doc.addPage();y=18;}
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(26,26,46);
+    const nw=doc.getTextWidth(num);
+    doc.text(num,M,y);
+    doc.setFont('helvetica','normal'); doc.setTextColor(60,60,80);
+    const lines=doc.splitTextToSize(text,W-M*2-nw-2);
+    doc.text(lines,M+nw+2,y);
+    y+=lines.length*4.5+3;
+  });
+
+  y+=4;
+  if(y>240){doc.addPage();y=18;}
+  doc.setDrawColor(220,224,236); doc.line(M,y,W-M,y); y+=6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,26,46);
+  doc.text('Firma Digital del Cliente',M,y);
+
+  if(sigDataUrl){
+    try{
+      let raw=sigDataUrl; if(raw.includes(','))raw=raw.split(',',2)[1];
+      doc.addImage(raw,'PNG',M,y+3,75,20); y+=28;
+    }catch(e){y+=25;}
+  } else {y+=20;}
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,100,130);
+  doc.text(`Firmado por: ${name}`,M,y); y+=5;
+  doc.text(`Email: ${email}`,M,y); y+=5;
+  doc.text(`Fecha y hora: ${new Date().toLocaleString('es-AR')}`,M,y);
+  if(engagementId){ y+=5; doc.text(`Referencia: ${engagementId.slice(-16).toUpperCase()}`,M,y); }
+
+  doc.setFillColor(26,26,46); doc.rect(0,287,W,10,'F');
+  doc.setFontSize(7); doc.setTextColor(120,120,160);
+  doc.text('Confidencial — Agraound Consulting / AETHERYON Systems — agraound.com',W/2,293,{align:'center'});
+
+  return doc.output('blob');
+}
+
+function downloadLocalCopy() {
+  if (!localPdfBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(localPdfBlob);
+  a.download = `NDA_Agraound_${(engagementId||'preview').slice(-8).toUpperCase()}.pdf`;
+  a.click();
+}
+
+function downloadLocalPreview() {
+  const sigData = getSignatureDataURL();
+  localPdfBlob = generateLocalPdf(sigData);
+  downloadLocalCopy();
+}
+</script>
+</body>
+</html>
