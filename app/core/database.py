@@ -3,11 +3,6 @@ from pymongo.server_api import ServerApi
 from app.core.config import settings
 import certifi
 
-import motor.motor_asyncio
-from pymongo.server_api import ServerApi
-from app.core.config import settings
-import certifi
-
 client = None
 db = None
 
