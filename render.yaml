@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: agraound-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # MongoDB Atlas — set manually in Render dashboard (never commit to git)
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: agraound-nda
+
+      # Resend — set manually in Render dashboard
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: contacto@agraound.site
+      - key: EMAIL_FROM_NAME
+        value: Agraound Consulting
+      - key: EMAIL_PROVIDER_TO
+        sync: false   # e.g. contacto@agraound.site — must be a full email address
+
+      # App
+      - key: SECRET_KEY
+        generateValue: true   # Render auto-generates a secure random value
+      - key: MAX_UPLOAD_MB
+        value: "10"
+      - key: UPLOAD_DIR
+        value: /tmp/uploads   # ephemeral on Render — R2 handles persistence
+
+      # Cloudflare R2 — set manually in Render dashboard
+      - key: R2_ENDPOINT_URL
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        value: agraound-docs
+      - key: R2_PRESIGNED_EXPIRY
+        value: "3600"
