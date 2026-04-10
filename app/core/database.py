@@ -11,8 +11,8 @@ async def connect_db():
     client = motor.motor_asyncio.AsyncIOMotorClient(
         settings.MONGODB_URI,
         server_api=ServerApi("1"),
-        #tls=True,
-        #tlsAllowInvalidCertificates=False,
+        tls=True,
+        tlsAllowInvalidCertificates=False,
     )
     try:
         await client.admin.command("ping")
