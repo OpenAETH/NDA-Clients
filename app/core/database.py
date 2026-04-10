@@ -7,23 +7,24 @@ client = None
 db = None
 
 
+import ssl
+
 async def connect_db():
     global client, db
-
     client = motor.motor_asyncio.AsyncIOMotorClient(
         settings.MONGODB_URI,
         server_api=ServerApi("1"),
         tls=True,
-        tlsCAFile=certifi.where(),
+        tlsAllowInvalidCertificates=False,
+        tlsAllowInvalidHostnames=False,
+        tlsCAFile=None,  # Usar el store del sistema
+        retryWrites=True,
+        retryReads=True,
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000,
+        # 🔥 CRÍTICO: forzar TLS 1.2+
+        ssl_cert_reqs=ssl.CERT_REQUIRED,
     )
-
-    try:
-        await client.admin.command("ping")
-        print(f"[DB] Connected — db: {settings.MONGODB_DB}")
-    except Exception as e:
-        print(f"[DB] Connection failed: {e}")
-
-    db = client[settings.MONGODB_DB]
 
 
 async def close_db():
