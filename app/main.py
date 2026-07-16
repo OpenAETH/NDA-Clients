@@ -5,17 +5,19 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from pathlib import Path
 import os
-from app.core.database import connect_db, close_db
-from app.routers import products, engagements, payments
+from app.core import sales_log
+from app.routers import products, engagements, payments, payment_info
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await connect_db()
+    # El cliente Mongo del registro de ventas es lazy (se conecta al primer
+    # uso). Acá solo lo cerramos al apagar. La persistencia operativa vive en
+    # archivos JSON, sin conexión que abrir al arrancar.
     yield
-    await close_db()
+    sales_log.close()
 
 
 app = FastAPI(
@@ -38,9 +40,10 @@ app.add_middleware(
 )
 
 # ── API routes (registered first — take priority over static) ─────
-app.include_router(products.router,    prefix="/api/products",    tags=["Products"])
-app.include_router(engagements.router, prefix="/api/engagements", tags=["Engagements"])
-app.include_router(payments.router,    prefix="/api/payments",    tags=["Payments"])
+app.include_router(products.router,     prefix="/api/products",     tags=["Products"])
+app.include_router(engagements.router,  prefix="/api/engagements",  tags=["Engagements"])
+app.include_router(payments.router,     prefix="/api/payments",     tags=["Payments"])
+app.include_router(payment_info.router, prefix="/api/payment-info", tags=["Payment Info"])
 
 
 @app.get("/health", tags=["Health"])

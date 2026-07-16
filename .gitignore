@@ -8,3 +8,10 @@ uploads/
 dist/
 .venv/
 venv/
+
+# Catálogo estático: products.json y payment_info.json SÍ se versionan.
+# Datos transaccionales (clients/engagements/payments) viven en el volumen
+# persistente (TX_DATA_DIR, por defecto data/tx/) — nunca se versionan.
+data/tx/
+*.json.tmp
+*.lock

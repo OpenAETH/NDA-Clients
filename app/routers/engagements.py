@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request
 from typing import List
 from datetime import datetime, timezone
-from bson import ObjectId
 
-from app.core.database import get_db
+from app.core import store, sales_log
+from app.core.config import settings
 from app.models.schemas import EngagementCreate, EngagementOut
 from app.services.pdf_service import generate_nda_pdf
 from app.services.email_service import send_nda_to_client, send_provider_notification
@@ -12,26 +12,19 @@ from app.services import storage_service
 router = APIRouter()
 
 
-def _serialize(doc) -> dict:
-    doc["id"] = str(doc.pop("_id"))
-    return doc
-
-
 @router.post("", status_code=201)
 async def create_engagement(payload: EngagementCreate, request: Request):
     """
     Called when client submits the signed NDA form.
     1. Resolves product from catalog
     2. Calculates final price
-    3. Creates client + engagement documents in MongoDB
+    3. Creates client + engagement records (JSON store)
     4. Generates NDA PDF server-side
     5. Sends PDF to client and notification to provider
     Returns engagement_id for reference.
     """
-    db = get_db()
-
     # ── Resolve product ──────────────────────────────────────────
-    product = await db.products.find_one({"code": payload.product_code.upper(), "is_active": True})
+    product = store.products.find_one({"code": payload.product_code.upper(), "is_active": True})
     if not product:
         raise HTTPException(404, f"Product '{payload.product_code}' not found or inactive")
 
@@ -47,18 +40,18 @@ async def create_engagement(payload: EngagementCreate, request: Request):
     milestones = product.get("milestones", [])
 
     # ── Upsert client ────────────────────────────────────────────
+    now = datetime.now(timezone.utc)
     client_doc = payload.client.model_dump()
-    client_doc["updated_at"] = datetime.now(timezone.utc)
-    client_result = await db.clients.find_one_and_update(
+    client_doc["updated_at"] = now
+    client_result = store.clients.upsert(
         {"email": payload.client.email},
-        {"$set": client_doc, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
-        upsert=True,
-        return_document=True,
+        client_doc,
+        on_insert={"created_at": now},
     )
-    client_id = str(client_result["_id"])
+    client_id = client_result["id"]
 
     # ── Create engagement ────────────────────────────────────────
-    signed_at = datetime.now(timezone.utc)
+    signed_at = now
     ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else None)
 
     engagement_doc = {
@@ -84,8 +77,8 @@ async def create_engagement(payload: EngagementCreate, request: Request):
         "nda_version":         "1.0",
     }
 
-    result = await db.engagements.insert_one(engagement_doc)
-    engagement_id = str(result.inserted_id)
+    engagement = store.engagements.insert(engagement_doc)
+    engagement_id = engagement["id"]
 
     # ── Create payment rows ──────────────────────────────────────
     payment_docs = []
@@ -113,7 +106,23 @@ async def create_engagement(payload: EngagementCreate, request: Request):
             })
 
     if payment_docs:
-        await db.payments.insert_many(payment_docs)
+        store.payments.insert_many(payment_docs)
+
+    # ── Registro de venta en Mongo (best-effort, no-fatal) ───────
+    await sales_log.record_sale({
+        "engagement_id": engagement_id,
+        "client_id":     client_id,
+        "client_name":   payload.client.full_name,
+        "client_email":  payload.client.email,
+        "product_code":  payload.product_code.upper(),
+        "product_name":  product.get("full_name") or product.get("name"),
+        "payment_mode":  payload.payment_mode,
+        "final_price":   final_price,
+        "discount_pct":  discount_pct,
+        "status":        "signed",
+        "payment_status": "pending",
+        "signed_at":     signed_at,
+    })
 
     # ── Generate PDF ──────────────────────────────────────────────
     try:
@@ -167,13 +176,13 @@ async def create_engagement(payload: EngagementCreate, request: Request):
             except storage_service.StorageError as e:
                 print(f"[ENGAGEMENT] R2 PDF backup failed (non-fatal): {e}")
 
-        await db.engagements.update_one(
-            {"_id": ObjectId(engagement_id)},
-            {"$set": {
+        store.engagements.update_one(
+            {"id": engagement_id},
+            {
                 "pdf_generated":  True,
                 "pdf_r2_key":     pdf_r2_key,
                 "storage_backend": "r2" if pdf_r2_key else "none",
-            }},
+            },
         )
 
     except Exception as e:
@@ -189,15 +198,11 @@ async def create_engagement(payload: EngagementCreate, request: Request):
 @router.get("", response_model=List[EngagementOut])
 async def list_engagements(status: str = None, limit: int = 50):
     """Admin: list all engagements, optionally filtered by status."""
-    db = get_db()
-    query = {}
-    if status:
-        query["status"] = status
-    cursor = db.engagements.find(query).sort("created_at", -1).limit(limit)
-    docs = []
-    async for doc in cursor:
-        docs.append({
-            "id":           str(doc["_id"]),
+    filters = {"status": status} if status else None
+    docs = store.engagements.find(filters, sort=("created_at", -1))[:limit]
+    return [
+        {
+            "id":           doc["id"],
             "client_email": doc.get("client_email"),
             "client_name":  doc.get("client_name"),
             "product_code": doc.get("product_code"),
@@ -206,8 +211,9 @@ async def list_engagements(status: str = None, limit: int = 50):
             "status":       doc.get("status"),
             "signed_at":    doc.get("signed_at"),
             "created_at":   doc.get("created_at"),
-        })
-    return docs
+        }
+        for doc in docs
+    ]
 
 
 @router.get("/{engagement_id}/nda/download")
@@ -216,13 +222,7 @@ async def download_nda(engagement_id: str, expires: int = 3600):
     Admin: generate a presigned URL to download the signed NDA PDF from R2.
     Expires after `expires` seconds (default 1 hour).
     """
-    db = get_db()
-    try:
-        oid = ObjectId(engagement_id)
-    except Exception:
-        raise HTTPException(400, "Invalid engagement_id")
-
-    doc = await db.engagements.find_one({"_id": oid}, {"pdf_r2_key": 1, "storage_backend": 1})
+    doc = store.engagements.find_one({"id": engagement_id})
     if not doc:
         raise HTTPException(404, "Engagement not found")
 
@@ -245,17 +245,14 @@ async def download_nda(engagement_id: str, expires: int = 3600):
         raise HTTPException(500, f"No se pudo generar la URL de descarga: {e}")
 
 
-
-    db = get_db()
-    try:
-        oid = ObjectId(engagement_id)
-    except Exception:
-        raise HTTPException(400, "Invalid engagement_id")
-    doc = await db.engagements.find_one({"_id": oid})
+@router.get("/{engagement_id}")
+async def get_engagement(engagement_id: str):
+    """Admin: fetch a single engagement (raw signature omitted)."""
+    doc = store.engagements.find_one({"id": engagement_id})
     if not doc:
         raise HTTPException(404, "Engagement not found")
-    doc.pop("signature_data", None)   # Don't expose raw signature in GET
-    return _serialize(doc)
+    doc = {k: v for k, v in doc.items() if k != "signature_data"}
+    return doc
 
 
 @router.patch("/{engagement_id}/status")
@@ -264,15 +261,12 @@ async def update_status(engagement_id: str, status: str):
     valid = {"pending", "signed", "active", "completed", "cancelled"}
     if status not in valid:
         raise HTTPException(400, f"Status must be one of: {valid}")
-    db = get_db()
-    try:
-        oid = ObjectId(engagement_id)
-    except Exception:
-        raise HTTPException(400, "Invalid engagement_id")
-    result = await db.engagements.update_one(
-        {"_id": oid},
-        {"$set": {"status": status, "updated_at": datetime.now(timezone.utc)}},
+    now = datetime.now(timezone.utc)
+    result = store.engagements.update_one(
+        {"id": engagement_id},
+        {"status": status, "updated_at": now},
     )
-    if result.matched_count == 0:
+    if result is None:
         raise HTTPException(404, "Engagement not found")
+    await sales_log.update_sale_status(engagement_id, {"status": status, "updated_at": now})
     return {"engagement_id": engagement_id, "status": status}

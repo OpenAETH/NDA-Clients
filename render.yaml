@@ -3,9 +3,22 @@ services:
     name: agraound-backend
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # El file-lock (fcntl) solo serializa dentro de un host, y el disco
+    # persistente se monta en una sola instancia: mantené 1 worker / 1 instancia.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    # Disco persistente independiente para los datos transaccionales de ventas.
+    # Sobrevive a redeploys. El catálogo (products/payment_info) viaja en el repo.
+    disk:
+      name: sales-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
-      # MongoDB Atlas — set manually in Render dashboard (never commit to git)
+      # Persistencia transaccional: JSON en el volumen persistente montado arriba.
+      - key: TX_DATA_DIR
+        value: /var/data
+
+      # MongoDB — SOLO registro de ventas (ledger), no fuente de verdad.
+      # Opcional: si se deja vacío, el registro en Mongo se desactiva sin error.
       - key: MONGODB_URI
         sync: false
       - key: MONGODB_DB

@@ -3,10 +3,24 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # ── MongoDB Atlas ────────────────────────────────────────────
-    MONGODB_URI: str = "mongodb+srv://gntprsnl_db_user:<password>@cluster0.0qrrq1w.mongodb.net/?appName=Cluster0"
-    # MONGODB_URI: str = "mongodb+srv://gntprsnl_db_user:uYnfCzedDVhn6QDK@cluster0.0qrrq1w.mongodb.net/?appName=Cluster0"
+    # ── Persistencia ─────────────────────────────────────────────
+    # Catálogo estático (products.json, payment_info.json): versionado en el
+    # repo, dentro de data/ (CATALOG_DIR, se resuelve solo).
+    # Datos transaccionales (clients/engagements/payments.json): en un volumen
+    # persistente independiente (TX_DATA_DIR). En Render se monta un disk ahí.
+    # Las escrituras se serializan con file-lock (fcntl.flock).
+    TX_DATA_DIR: str = "data/tx"
+
+    # ── MongoDB (solo registro de ventas) ────────────────────────
+    # Ledger consultable de ventas. NO es la fuente de verdad operativa:
+    # el JSON del volumen lo es. La escritura a Mongo es best-effort y no
+    # bloquea la firma de la venta si falla o no está configurado.
+    MONGODB_URI: str = ""
     MONGODB_DB:  str = "agraound-nda"
+
+    @property
+    def mongo_enabled(self) -> bool:
+        return bool(self.MONGODB_URI)
 
     # ── Resend ───────────────────────────────────────────────────
     RESEND_API_KEY:    str = ""

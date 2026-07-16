@@ -3,9 +3,8 @@ import uuid
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from typing import Optional
 from datetime import datetime, timezone
-from bson import ObjectId
 
-from app.core.database import get_db
+from app.core import store, sales_log
 from app.core.config import settings
 from app.models.schemas import PaymentUpdate
 from app.services.email_service import send_payment_receipt_notification
@@ -28,19 +27,12 @@ async def upload_receipt(
 ):
     """
     Client uploads payment receipt (PDF/image).
-    - R2 configured: uploads to Cloudflare R2, stores object key in MongoDB.
+    - R2 configured: uploads to Cloudflare R2, stores object key in the JSON store.
     - No R2: fallback to local UPLOAD_DIR (dev only).
     Notifies provider by email regardless of storage backend.
     """
-    db = get_db()
-
     # ── Validate engagement ──────────────────────────────────────
-    try:
-        oid = ObjectId(engagement_id)
-    except Exception:
-        raise HTTPException(400, "Invalid engagement_id")
-
-    engagement = await db.engagements.find_one({"_id": oid})
+    engagement = store.engagements.find_one({"id": engagement_id})
     if not engagement:
         raise HTTPException(404, "Engagement not found")
 
@@ -80,21 +72,18 @@ async def upload_receipt(
 
     # ── Update payment record ────────────────────────────────────
     now = datetime.now(timezone.utc)
-    result = await db.payments.find_one_and_update(
+    result = store.payments.update_one(
         {"engagement_id": engagement_id, "milestone_n": milestone_n},
         {
-            "$set": {
-                "receipt_key":     storage_key,
-                "storage_backend": storage_backend,
-                "receipt_notes":   notes,
-                "method":          method,
-                "method_detail":   method_detail,
-                "status":          "received",
-                "paid_at":         now,
-                "updated_at":      now,
-            }
+            "receipt_key":     storage_key,
+            "storage_backend": storage_backend,
+            "receipt_notes":   notes,
+            "method":          method,
+            "method_detail":   method_detail,
+            "status":          "received",
+            "paid_at":         now,
+            "updated_at":      now,
         },
-        return_document=True,
     )
 
     if not result:
@@ -127,8 +116,7 @@ async def download_receipt(engagement_id: str, milestone_n: int, expires: int = 
     Admin: generate a presigned URL to download a receipt from R2.
     Expires after `expires` seconds (default 1 hour).
     """
-    db = get_db()
-    payment = await db.payments.find_one(
+    payment = store.payments.find_one(
         {"engagement_id": engagement_id, "milestone_n": milestone_n}
     )
     if not payment:
@@ -162,20 +150,16 @@ async def download_receipt(engagement_id: str, milestone_n: int, expires: int = 
 @router.get("/{engagement_id}")
 async def get_payments(engagement_id: str):
     """Get all payment records for an engagement."""
-    db = get_db()
-    cursor = db.payments.find({"engagement_id": engagement_id}).sort("milestone_n", 1)
-    docs = []
-    async for doc in cursor:
-        doc["id"] = str(doc.pop("_id"))
-        doc.pop("receipt_key", None)    # Never expose raw storage keys to clients
-        docs.append(doc)
-    return docs
+    docs = store.payments.find({"engagement_id": engagement_id}, sort=("milestone_n", 1))
+    return [
+        {k: v for k, v in doc.items() if k != "receipt_key"}  # Never expose raw storage keys
+        for doc in docs
+    ]
 
 
 @router.patch("/{engagement_id}/{milestone_n}/verify")
 async def verify_payment(engagement_id: str, milestone_n: int, payload: PaymentUpdate):
     """Admin: mark a payment as verified or rejected."""
-    db = get_db()
     now = datetime.now(timezone.utc)
 
     update_data: dict = {"status": payload.status, "updated_at": now}
@@ -185,24 +169,26 @@ async def verify_payment(engagement_id: str, milestone_n: int, payload: PaymentU
     if payload.notes:
         update_data["receipt_notes"] = payload.notes
 
-    result = await db.payments.find_one_and_update(
+    result = store.payments.update_one(
         {"engagement_id": engagement_id, "milestone_n": milestone_n},
-        {"$set": update_data},
-        return_document=True,
+        update_data,
     )
     if not result:
         raise HTTPException(404, "Payment record not found")
 
     # Activar engagement cuando se verifica el primer pago
     if milestone_n == 1 and payload.status == "verified":
-        await db.engagements.update_one(
-            {"_id": ObjectId(engagement_id)},
-            {"$set": {"status": "active", "updated_at": now}},
+        store.engagements.update_one(
+            {"id": engagement_id},
+            {"status": "active", "updated_at": now},
         )
+        await sales_log.update_sale_status(engagement_id, {
+            "status":         "active",
+            "payment_status": "verified",
+            "updated_at":     now,
+        })
 
-    result["id"] = str(result.pop("_id"))
-    result.pop("receipt_key", None)
-    return result
+    return {k: v for k, v in result.items() if k != "receipt_key"}
 
 
 def _save_local(content: bytes, engagement_id: str, milestone_n: int, ext: str) -> str:

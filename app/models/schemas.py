@@ -4,13 +4,6 @@ from datetime import datetime
 from enum import Enum
 
 
-# ── Shared ──────────────────────────────────────────────────────
-
-class PyObjectId(str):
-    """Allows MongoDB ObjectId to serialize as string in JSON."""
-    pass
-
-
 # ── Products ────────────────────────────────────────────────────
 
 class Milestone(BaseModel):

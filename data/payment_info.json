@@ -1,0 +1,67 @@
+{
+  "note": "Datos de pago editables. Agregá, quitá o modificá métodos y campos sin tocar el código. Cada método aparece como una pestaña en el formulario.",
+  "methods": [
+    {
+      "key": "ars",
+      "label": "Transferencia ARS",
+      "currency": "ARS",
+      "enabled": true,
+      "fields": [
+        { "label": "Alias", "value": "Agraound.LEMON" },
+        { "label": "CVU", "value": "0000168300000004203016" }
+      ],
+      "notes": []
+    },
+    {
+      "key": "usd",
+      "label": "Transferencia USD",
+      "currency": "USD",
+      "enabled": true,
+      "fields": [
+        { "label": "Nombre", "value": "Guido Gomez" },
+        { "label": "Banco", "value": "Lead Bank" },
+        { "label": "Routing number", "value": "101019644" },
+        { "label": "Account number", "value": "210953960839" },
+        { "label": "Tipo de cuenta", "value": "Checking" },
+        { "label": "Dirección", "value": "1801 Main St., Kansas City, MO 64108" }
+      ],
+      "notes": [
+        "Se reciben USDt: 1 USD = 1 USDt.",
+        "Comisión: ACH 1,5% — WIRE 1,5% + 12 USD (se traslada el costo al producto).",
+        "Acreditación: 1 a 3 días hábiles."
+      ]
+    },
+    {
+      "key": "eur",
+      "label": "Transferencia EUR",
+      "currency": "EUR",
+      "enabled": true,
+      "fields": [
+        { "label": "Nombre", "value": "Guido Gomez" },
+        { "label": "Tipo de cuenta", "value": "Business" },
+        { "label": "País", "value": "Malta" },
+        { "label": "IBAN", "value": "MT64CFTE28004000000000006494900" },
+        { "label": "Tipo de transferencia", "value": "SEPA" }
+      ],
+      "notes": []
+    },
+    {
+      "key": "crypto",
+      "label": "Cripto",
+      "currency": "CRYPTO",
+      "enabled": true,
+      "fields": [
+        { "label": "BTC — BNB Chain (BEP20)", "value": "" },
+        { "label": "ETH — BNB Chain (BEP20)", "value": "" },
+        { "label": "ETH — Optimism (L2)", "value": "" },
+        { "label": "USDT — BNB Chain (BEP20)", "value": "" },
+        { "label": "USDT — Tron (TRC20)", "value": "" },
+        { "label": "USDC — BNB Chain (BEP20)", "value": "" },
+        { "label": "USDC — Solana", "value": "" }
+      ],
+      "notes": [
+        "Completá las direcciones de wallet en data/payment_info.json antes de habilitar cripto."
+      ]
+    }
+  ]
+}
