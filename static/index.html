@@ -77,6 +77,15 @@
   .milestone-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
   .milestone-table .total-row td { font-weight: 700; background: #f5f6fa; }
 
+  /* Discount code */
+  .discount-box { background: #f8f8ff; border: 1px dashed var(--border); border-radius: 8px; padding: 0.9rem 1rem; margin-bottom: 1rem; }
+  .discount-row { display: flex; gap: 0.5rem; margin-top: 4px; }
+  .discount-row input { flex: 1; text-transform: uppercase; }
+  .discount-row .btn-sm { flex-shrink: 0; padding: 0 18px; border-radius: 7px; }
+  .discount-msg { font-size: 12px; margin-top: 8px; font-weight: 500; }
+  .discount-msg.ok  { color: var(--ok); }
+  .discount-msg.err { color: var(--err); }
+
   .total-display { background: var(--brand); color: white; border-radius: 8px; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; }
   .total-display .td-label { font-size: 12px; opacity: 0.7; }
   .total-display .td-amount { font-size: 22px; font-weight: 700; color: #ff8fa3; }
@@ -192,7 +201,12 @@
     <div class="custom-row" id="custom-row">
       <label>Descripción del requerimiento personalizado <span class="req">*</span></label>
       <textarea id="custom-desc" placeholder="Describí qué necesitás: funcionalidades, integraciones, tecnologías, plazos, etc."></textarea>
-      <div class="info-text">El precio se calculará y confirmará antes de iniciar.</div>
+      <div style="margin-top:0.75rem;">
+        <label>Monto acordado (USD) <span class="req">*</span></label>
+        <input type="number" id="custom-amount" min="1" step="0.01" placeholder="Ej: 13000"
+               oninput="onCustomAmountChange()">
+        <div class="info-text">Ingresá el importe total a pagar que acordaste con el proveedor.</div>
+      </div>
     </div>
     <div id="product-error" class="alert warn" style="display:none;">Por favor seleccioná un producto.</div>
   </div>
@@ -214,6 +228,15 @@
     <table class="milestone-table"><thead><tr><th>Hito / Concepto</th><th>%</th><th>Monto (USD)</th><th>Cuándo</th></tr></thead>
       <tbody id="milestone-body"></tbody>
     </table>
+    <div class="discount-box" id="discount-box">
+      <label>¿Tenés un código de descuento?</label>
+      <div class="discount-row">
+        <input type="text" id="discount-input" placeholder="Ingresá tu código" autocomplete="off"
+               oninput="onDiscountInput()">
+        <button type="button" class="btn-sm" id="discount-apply" onclick="applyDiscount()">Aplicar</button>
+      </div>
+      <div id="discount-msg" class="discount-msg" style="display:none;"></div>
+    </div>
     <div class="total-display">
       <div><div class="td-label">TOTAL A PAGAR</div><div class="td-label" id="total-mode-label">Pago por hitos</div></div>
       <div class="td-amount" id="total-display">$0</div>
@@ -343,6 +366,8 @@ let engagementId  = null;
 let localPdfBlob  = null;
 let PAYMENT_METHODS = [];
 let selectedPayKey  = null;
+let customAmount    = null;   // monto manual para CUSTOM (USD)
+let appliedDiscount = null;   // {code,type,value,final_price,amount_saved,...} o null
 
 // ═══════════════════════════════════════════════════════
 // BOOT
@@ -395,7 +420,23 @@ function selectProduct(code) {
   document.getElementById('prod-' + code)?.classList.add('selected');
   document.getElementById('custom-row').classList.toggle('visible', code === 'CUSTOM');
   document.getElementById('product-error').style.display = 'none';
+  clearDiscount();       // el código depende del producto: reevaluar
   updateMilestones();
+}
+
+function onCustomAmountChange() {
+  const v = parseFloat(document.getElementById('custom-amount').value);
+  customAmount = (isNaN(v) || v <= 0) ? null : v;
+  clearDiscount();       // cambió el monto base: el descuento debe recalcularse
+  updateMilestones();
+}
+
+// Precio base efectivo: precio de catálogo, o monto manual para productos
+// sin precio fijo (CUSTOM o "a cotizar"). null si aún no hay monto.
+function effectiveBase() {
+  if (!selectedProd) return null;
+  if (selectedProd.base_price != null) return selectedProd.base_price;
+  return customAmount;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -409,50 +450,115 @@ function selectPaymentMode(mode) {
   updateMilestones();
 }
 
+const fmtUSD = n => `$${Math.round(n).toLocaleString()}`;
+
 function updateMilestones() {
   const tbody = document.getElementById('milestone-body');
   tbody.innerHTML = '';
   if (!selectedProd) { document.getElementById('total-display').textContent = '$0'; return; }
 
-  const base = selectedProd.base_price;
-  const discPct = paymentMode === 'anticipado' ? (selectedProd.discount_pct || 0) : 0;
+  const base = effectiveBase();
+  // El descuento por anticipado solo aplica a productos de catálogo con precio fijo.
+  const anticipadoPct = (paymentMode === 'anticipado' && selectedProd.base_price != null)
+    ? (selectedProd.discount_pct || 0) : 0;
   document.getElementById('discount-label').textContent =
     selectedProd.discount_pct ? `${selectedProd.discount_pct}% de descuento` : 'Sin descuento adicional';
 
   if (!base) {
     document.getElementById('total-display').textContent = 'A cotizar';
-    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--muted);font-style:italic;">Precio a definir según alcance.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--muted);font-style:italic;">Ingresá el monto acordado para ver el detalle.</td></tr>`;
     return;
   }
 
-  const totalFinal = Math.round(base * (1 - discPct / 100));
+  // Precio tras modalidad anticipada, luego tras el código de descuento (si aplica).
+  const afterMode = Math.round(base * (1 - anticipadoPct / 100));
+  const total = appliedDiscount ? Math.round(appliedDiscount.final_price) : afterMode;
   const milestones = selectedProd.milestones || [];
 
   if (paymentMode === 'hitos') {
     milestones.forEach((m, i) => {
-      const amt = Math.round(base * m.pct / 100);
+      const amt = Math.round(total * m.pct / 100);
       const tr = document.createElement('tr');
       if (i === 0) tr.style.background = '#fff5f7';
-      tr.innerHTML = `<td>Hito ${i+1} — ${m.label}</td><td>${m.pct}%</td><td><strong>$${amt.toLocaleString()}</strong></td><td>${['Al firmar','Al avanzar','Al finalizar'][i] || ''}</td>`;
+      tr.innerHTML = `<td>Hito ${i+1} — ${m.label}</td><td>${m.pct}%</td><td><strong>${fmtUSD(amt)}</strong></td><td>${['Al firmar','Al avanzar','Al finalizar'][i] || ''}</td>`;
       tbody.appendChild(tr);
     });
     const tr = document.createElement('tr');
     tr.className = 'total-row';
-    tr.innerHTML = `<td colspan="2"><strong>TOTAL</strong></td><td colspan="2"><strong>$${base.toLocaleString()}</strong></td>`;
+    tr.innerHTML = `<td colspan="2"><strong>TOTAL</strong></td><td colspan="2"><strong>${fmtUSD(total)}</strong></td>`;
     tbody.appendChild(tr);
-    document.getElementById('total-display').textContent = `$${base.toLocaleString()}`;
   } else {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>Pago único anticipado</td><td>100%</td><td style="color:var(--accent);font-weight:700;">$${totalFinal.toLocaleString()}</td><td>Al firmar</td>`;
+    tr.innerHTML = `<td>Pago único anticipado</td><td>100%</td><td style="color:var(--accent);font-weight:700;">${fmtUSD(total)}</td><td>Al firmar</td>`;
     tbody.appendChild(tr);
-    if (discPct > 0) {
-      const saved = base - totalFinal;
-      const tr2 = document.createElement('tr');
-      tr2.innerHTML = `<td colspan="4" style="color:var(--ok);font-size:12px;">Ahorrás $${saved.toLocaleString()} USD (${discPct}% de descuento)</td>`;
-      tbody.appendChild(tr2);
-    }
-    document.getElementById('total-display').textContent = `$${totalFinal.toLocaleString()}`;
   }
+
+  // Fila de ahorro combinado (modalidad + código) respecto al precio base.
+  const saved = Math.round(base - total);
+  if (saved > 0) {
+    const parts = [];
+    if (anticipadoPct > 0) parts.push(`${anticipadoPct}% anticipado`);
+    if (appliedDiscount)   parts.push(`código ${appliedDiscount.code}`);
+    const tr2 = document.createElement('tr');
+    tr2.innerHTML = `<td colspan="4" style="color:var(--ok);font-size:12px;">Ahorrás ${fmtUSD(saved)} USD${parts.length ? ` (${parts.join(' + ')})` : ''}</td>`;
+    tbody.appendChild(tr2);
+  }
+
+  document.getElementById('total-display').textContent = fmtUSD(total);
+}
+
+// ═══════════════════════════════════════════════════════
+// DISCOUNT CODE
+// ═══════════════════════════════════════════════════════
+function clearDiscount() {
+  appliedDiscount = null;
+  const msg = document.getElementById('discount-msg');
+  if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
+}
+
+function onDiscountInput() {
+  // Si el cliente edita el código tras aplicarlo, invalidar la previsualización.
+  if (appliedDiscount) { clearDiscount(); updateMilestones(); }
+}
+
+async function applyDiscount() {
+  const input = document.getElementById('discount-input');
+  const msg   = document.getElementById('discount-msg');
+  const code  = input.value.trim();
+  if (!code) return;
+
+  if (!selectedProd) {
+    msg.className = 'discount-msg err';
+    msg.textContent = 'Primero seleccioná un producto.';
+    msg.style.display = 'block';
+    return;
+  }
+  const base = effectiveBase();
+  if (!base) {
+    msg.className = 'discount-msg err';
+    msg.textContent = 'Ingresá primero el monto acordado.';
+    msg.style.display = 'block';
+    return;
+  }
+
+  const params = new URLSearchParams({ code, product_code: selectedProd.code });
+  if (selectedProd.base_price == null) params.set('amount', base);
+
+  try {
+    const res  = await fetch(`${API_BASE}/api/discounts/validate?${params}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Código inválido.');
+    appliedDiscount = data;
+    msg.className = 'discount-msg ok';
+    msg.textContent = `✓ ${data.description || 'Código aplicado'} — ahorrás $${Math.round(data.amount_saved).toLocaleString()} USD.`;
+    msg.style.display = 'block';
+  } catch (err) {
+    clearDiscount();
+    msg.className = 'discount-msg err';
+    msg.textContent = `✕ ${err.message}`;
+    msg.style.display = 'block';
+  }
+  updateMilestones();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -618,6 +724,10 @@ async function submitForm() {
     errs.push('Seleccioná un producto.');
     document.getElementById('product-error').style.display = 'block';
   }
+  // Productos sin precio de catálogo (CUSTOM / a cotizar) exigen monto manual.
+  if (selectedProd && selectedProd.base_price == null && !customAmount) {
+    errs.push('Ingresá el monto acordado.');
+  }
   const sigData = getSignatureDataURL();
   if (!sigData) {
     errs.push('Agregá tu firma.');
@@ -654,6 +764,8 @@ async function submitForm() {
       product_code:        selectedProd.code,
       payment_mode:        paymentMode,
       custom_description:  document.getElementById('custom-desc').value.trim() || null,
+      agreed_price:        (selectedProd.base_price == null ? customAmount : null),
+      discount_code:       appliedDiscount ? appliedDiscount.code : null,
       signature_type:      sigMode,
       signature_data:      sigData,
       user_agent:          navigator.userAgent,

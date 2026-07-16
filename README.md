@@ -47,12 +47,14 @@ app/
 ├── core/
 │   ├── config.py        # Settings via pydantic-settings (.env)
 │   ├── store.py         # Persistencia JSON + file-lock (fcntl)
+│   ├── discounts.py     # Resolución/cálculo de códigos de descuento
 │   └── sales_log.py     # Registro de ventas en MongoDB (best-effort)
 ├── models/
 │   └── schemas.py       # Modelos Pydantic (request/response)
 ├── routers/
 │   ├── products.py      # CRUD catálogo de productos/servicios
 │   ├── payment_info.py  # Datos de pago (transferencias/cripto)
+│   ├── discounts.py     # Validación de códigos de descuento
 │   ├── engagements.py   # Firma NDA, generación PDF, emails
 │   └── payments.py      # Upload comprobantes, verificación hitos
 ├── services/
@@ -62,7 +64,8 @@ app/
 └── main.py              # App FastAPI, CORS, lifespan, static
 data/
 ├── products.json        # Catálogo (versionado, editable)
-└── payment_info.json    # Datos de pago (versionado, editable)
+├── payment_info.json    # Datos de pago (versionado, editable)
+└── discount_codes.json  # Códigos de descuento (versionado, editable)
 static/
 └── index.html           # Frontend embebido
 ```
@@ -80,7 +83,8 @@ POST /api/engagements
         ↓
   ┌───────────────────────────────────────┐
   │ 1. Resuelve producto del catálogo (JSON)│
-  │ 2. Calcula precio + descuento          │
+  │ 2. Calcula precio: base/monto manual +  │
+  │    código de descuento (re-validado)   │
   │ 3. Upsert cliente (JSON, file-lock)    │
   │ 4. Crea engagement + pagos (JSON)      │
   │ 5. Registra la venta en Mongo (opcional)│
@@ -149,7 +153,7 @@ uvicorn app.main:app --reload
 
 Luego abrir: http://localhost:8000
 
-> No hay seed que correr: el catálogo ya está en `data/products.json` y `data/payment_info.json`. Los archivos transaccionales se crean solos en `TX_DATA_DIR` al primer uso.
+> No hay seed que correr: el catálogo ya está en `data/products.json`, `data/payment_info.json` y `data/discount_codes.json`. Los archivos transaccionales se crean solos en `TX_DATA_DIR` al primer uso.
 
 ---
 
@@ -178,6 +182,7 @@ Detalle completo en [`DEPLOY.md`](DEPLOY.md).
 | PUT | `/api/products/{code}` | Actualizar producto (admin) |
 | DELETE | `/api/products/{code}` | Desactivar producto (soft-delete) |
 | GET | `/api/payment-info` | Datos de pago habilitados |
+| GET | `/api/discounts/validate` | Validar código y previsualizar precio |
 
 ### Engagements
 | Método | Ruta | Descripción |
@@ -198,14 +203,35 @@ Detalle completo en [`DEPLOY.md`](DEPLOY.md).
 
 ---
 
-## Editar catálogo y datos de pago
+## Editar catálogo, datos de pago y descuentos
 
-Ambos son estáticos y editables a mano (sin base de datos):
+Todo el catálogo es estático y editable a mano (sin base de datos). Editás el archivo, commiteás y redeployás:
 
-- **Productos** → `data/products.json` (código, precio, descuento, hitos, badge).
+- **Productos** → `data/products.json` (código, precio, descuento por anticipado, hitos, badge).
 - **Datos de pago** → `data/payment_info.json` (ARS, USD, EUR, cripto). Cada método es una pestaña del formulario; `enabled: false` lo oculta, y los campos sin `value` no se muestran (útil para wallets aún sin dirección).
+- **Códigos de descuento** → `data/discount_codes.json` (ver abajo).
 
-Editás, commiteás y redeployás.
+### Códigos de descuento
+
+Se agregan/editan en `data/discount_codes.json`. Cada código:
+
+```json
+{
+  "code": "LANZAMIENTO15",
+  "type": "percent",          // "percent" (% sobre el precio) o "fixed" (USD a restar)
+  "value": 15,
+  "description": "15% de descuento de lanzamiento",
+  "products": [],             // [] o ausente = todos; ["DAE"] = solo ese producto
+  "enabled": true,            // false lo desactiva
+  "expires_at": null          // fecha ISO "YYYY-MM-DD" o null (sin vencimiento)
+}
+```
+
+El cliente ingresa el código en el formulario; `GET /api/discounts/validate` lo verifica y muestra el precio actualizado en vivo. **El descuento se re-valida y re-calcula siempre en el servidor al contratar** — el precio que envía el frontend nunca se toma como fuente de verdad.
+
+### Monto manual (CUSTOM y productos "a cotizar")
+
+Los productos sin `base_price` (p. ej. `CUSTOM`) piden un **monto acordado** en el formulario. Ese importe (`agreed_price`) se usa como precio base y admite código de descuento encima. El backend rechaza (`422`) contratar este tipo de producto sin un monto válido (`> 0`).
 
 ---
 
@@ -215,6 +241,7 @@ Editás, commiteás y redeployás.
 |---|---|---|
 | `products.json` | `data/` (repo) | Catálogo de servicios con precios y hitos |
 | `payment_info.json` | `data/` (repo) | Datos de transferencia y cripto |
+| `discount_codes.json` | `data/` (repo) | Códigos de descuento (% o fijo) |
 | `clients.json` | `TX_DATA_DIR` | Datos de clientes (upsert por email) |
 | `engagements.json` | `TX_DATA_DIR` | Contratos firmados + metadata NDA |
 | `payments.json` | `TX_DATA_DIR` | Hitos de pago por engagement |

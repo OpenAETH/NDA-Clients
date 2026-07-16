@@ -1,0 +1,32 @@
+{
+  "note": "Códigos de descuento editables a mano. 'type': 'percent' (pct sobre el precio) o 'fixed' (monto en USD a restar). 'products': lista de códigos de producto a los que aplica ([] o ausente = todos, incluido CUSTOM). 'enabled': false lo desactiva. 'expires_at': ISO date o null.",
+  "codes": [
+    {
+      "code": "LANZAMIENTO15",
+      "type": "percent",
+      "value": 15,
+      "description": "15% de descuento de lanzamiento",
+      "products": [],
+      "enabled": true,
+      "expires_at": null
+    },
+    {
+      "code": "DAE500",
+      "type": "fixed",
+      "value": 500,
+      "description": "USD 500 off en Data Audit & Evaluation",
+      "products": ["DAE"],
+      "enabled": true,
+      "expires_at": null
+    },
+    {
+      "code": "ALIADO2026",
+      "type": "percent",
+      "value": 10,
+      "description": "10% para clientes referidos",
+      "products": [],
+      "enabled": true,
+      "expires_at": "2026-12-31"
+    }
+  ]
+}

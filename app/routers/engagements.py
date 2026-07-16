@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from typing import List
 from datetime import datetime, timezone
 
-from app.core import store, sales_log
+from app.core import store, sales_log, discounts
 from app.core.config import settings
 from app.models.schemas import EngagementCreate, EngagementOut
 from app.services.pdf_service import generate_nda_pdf
@@ -28,15 +28,43 @@ async def create_engagement(payload: EngagementCreate, request: Request):
     if not product:
         raise HTTPException(404, f"Product '{payload.product_code}' not found or inactive")
 
+    # ── Precio (siempre calculado en el servidor) ────────────────
+    # 1. Precio base: del catálogo, o el monto manual ingresado por el
+    #    cliente (obligatorio para CUSTOM o productos "a cotizar").
     base_price = product.get("base_price")
-    discount_pct = product.get("discount_pct", 0) if payload.payment_mode == "anticipado" else 0
-
-    # Custom products can pass a pre-agreed price
     if payload.agreed_price is not None:
-        base_price = payload.agreed_price
-        discount_pct = 0
+        if payload.agreed_price <= 0:
+            raise HTTPException(422, "El monto acordado debe ser mayor a 0.")
+        base_price = round(payload.agreed_price, 2)
 
-    final_price = round(base_price * (1 - discount_pct / 100), 2) if base_price else None
+    if base_price is None:
+        raise HTTPException(
+            422,
+            "Este producto requiere un monto acordado. Ingresá el importe a pagar.",
+        )
+
+    # 2. Descuento por pago anticipado (solo productos de catálogo con precio fijo).
+    anticipado_pct = (
+        product.get("discount_pct", 0)
+        if payload.payment_mode == "anticipado" and payload.agreed_price is None
+        else 0
+    )
+    price_after_mode = round(base_price * (1 - anticipado_pct / 100), 2)
+
+    # 3. Código de descuento (opcional), re-validado acá — nunca se confía
+    #    en el precio que envía el frontend.
+    discount_meta = None
+    final_price = price_after_mode
+    if payload.discount_code and payload.discount_code.strip():
+        try:
+            disc = discounts.resolve_code(payload.discount_code, payload.product_code)
+        except discounts.DiscountError as e:
+            raise HTTPException(422, f"Código de descuento inválido: {e}")
+        final_price = discounts.apply_discount(price_after_mode, disc)
+        discount_meta = {**disc, "amount_saved": round(price_after_mode - final_price, 2)}
+
+    # Descuento total efectivo (modalidad + código) sobre el precio base.
+    discount_pct = round((1 - final_price / base_price) * 100, 2) if base_price else 0
     milestones = product.get("milestones", [])
 
     # ── Upsert client ────────────────────────────────────────────
@@ -63,6 +91,8 @@ async def create_engagement(payload: EngagementCreate, request: Request):
         "payment_mode":        payload.payment_mode,
         "agreed_price":        base_price,
         "discount_pct":        discount_pct,
+        "discount_code":       discount_meta["code"] if discount_meta else None,
+        "discount_detail":     discount_meta,
         "final_price":         final_price,
         "milestones_snapshot": milestones,
         "custom_description":  payload.custom_description,
@@ -94,7 +124,7 @@ async def create_engagement(payload: EngagementCreate, request: Request):
         })
     else:
         for m in milestones:
-            amt = round(base_price * m["pct"] / 100, 2) if base_price else None
+            amt = round(final_price * m["pct"] / 100, 2) if final_price else None
             payment_docs.append({
                 "engagement_id":  engagement_id,
                 "milestone_n":    m["milestone_n"],
@@ -117,8 +147,10 @@ async def create_engagement(payload: EngagementCreate, request: Request):
         "product_code":  payload.product_code.upper(),
         "product_name":  product.get("full_name") or product.get("name"),
         "payment_mode":  payload.payment_mode,
+        "agreed_price":  base_price,
         "final_price":   final_price,
         "discount_pct":  discount_pct,
+        "discount_code": discount_meta["code"] if discount_meta else None,
         "status":        "signed",
         "payment_status": "pending",
         "signed_at":     signed_at,

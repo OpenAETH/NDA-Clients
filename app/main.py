@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 import os
 from app.core import sales_log
-from app.routers import products, engagements, payments, payment_info
+from app.routers import products, engagements, payments, payment_info, discounts
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
 
@@ -44,6 +44,7 @@ app.include_router(products.router,     prefix="/api/products",     tags=["Produ
 app.include_router(engagements.router,  prefix="/api/engagements",  tags=["Engagements"])
 app.include_router(payments.router,     prefix="/api/payments",     tags=["Payments"])
 app.include_router(payment_info.router, prefix="/api/payment-info", tags=["Payment Info"])
+app.include_router(discounts.router,    prefix="/api/discounts",    tags=["Discounts"])
 
 
 @app.get("/health", tags=["Health"])

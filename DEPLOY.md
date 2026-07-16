@@ -85,10 +85,13 @@ MongoDB es **opcional**. Si lo dejás sin configurar, el sistema funciona igual 
 
 El catálogo es estático y editable a mano. **No hay seed que correr.**
 
-- **Productos** → `data/products.json` (código, precio, descuento, hitos, badge).
+- **Productos** → `data/products.json` (código, precio, descuento por anticipado, hitos, badge).
 - **Datos de pago** → `data/payment_info.json` (ARS, USD, EUR, cripto). Cada método aparece como una pestaña en el formulario; `enabled: false` lo oculta y los campos sin `value` no se muestran.
+- **Códigos de descuento** → `data/discount_codes.json`. Cada código tiene `type` (`percent` o `fixed`), `value`, `products` (lista de códigos a los que aplica; `[]` = todos), `enabled` y `expires_at` (ISO o `null`). El cliente lo ingresa en el formulario y `GET /api/discounts/validate` previsualiza el precio; el descuento se **re-valida y recalcula siempre en el servidor** al contratar.
 
-Editás el archivo, commiteás y redeployás. También podés usar los endpoints `POST/PUT/DELETE /api/products` (escriben sobre `data/products.json`), útil para cambios puntuales, pero recordá reflejar el cambio en el repo o se pierde en el próximo deploy.
+> Los productos sin `base_price` (p. ej. `CUSTOM`) piden un **monto acordado** (`agreed_price`) en el formulario, que se usa como precio base y admite un código de descuento encima.
+
+Editás el archivo, commiteás y redeployás. También podés usar los endpoints `POST/PUT/DELETE /api/products` (escriben sobre `data/products.json`), útil para cambios puntuales, pero recordá reflejar el cambio en el repo o se pierde en el próximo deploy. Los códigos de descuento solo se editan por archivo (no hay endpoint de gestión).
 
 ---
 
@@ -98,6 +101,7 @@ El formulario ya está integrado en `static/index.html` y servido por la propia 
 
 - `GET /api/products` → catálogo (paso 2 del formulario).
 - `GET /api/payment-info` → datos de transferencia (paso 3, pestañas dinámicas).
+- `GET /api/discounts/validate` → valida código y previsualiza el precio (paso 3).
 - `POST /api/engagements` → firma del NDA.
 - `POST /api/payments/{id}/receipt` → comprobante.
 

@@ -62,7 +62,8 @@ class EngagementCreate(BaseModel):
     product_code: str
     payment_mode: PaymentMode
     custom_description: Optional[str] = None       # For CUSTOM product
-    agreed_price: Optional[float] = None           # Override for custom pricing
+    agreed_price: Optional[float] = None           # Manual amount (CUSTOM or override)
+    discount_code: Optional[str] = None            # Optional discount code
     signature_type: SignatureType
     signature_data: str                            # base64 PNG
     ip_address: Optional[str] = None
