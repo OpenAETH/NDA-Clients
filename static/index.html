@@ -106,6 +106,21 @@
   .crypto-token-tab .tok-icon { font-weight: 700; }
   .crypto-token-tab.active { background: var(--brand); color: white; border-color: var(--brand); }
 
+  .crypto-network-select { margin-top: 0.75rem; }
+  .crypto-network-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .crypto-network-tab { padding: 4px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.15s; background: white; }
+  .crypto-network-tab.active { background: var(--accent2); color: white; border-color: var(--accent2); }
+
+  .crypto-wallet { margin-top: 0.85rem; background: #f5f6fa; border-radius: 8px; padding: 0.9rem 1rem; }
+  .crypto-wallet .cw-qr { display: block; width: 160px; height: 160px; margin: 0 auto 0.75rem; border-radius: 8px; background: white; padding: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+  .crypto-wallet .cw-addr-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .crypto-wallet .cw-addr-row { display: flex; gap: 0.5rem; align-items: stretch; }
+  .crypto-wallet .cw-addr { flex: 1; font-family: monospace; font-size: 12px; word-break: break-all; background: white; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; }
+  .crypto-wallet .cw-copy { flex-shrink: 0; padding: 0 14px; border: 1px solid var(--brand); background: var(--brand); color: white; border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .crypto-wallet .cw-copy:hover { opacity: 0.9; }
+  .crypto-wallet .cw-copy.copied { background: var(--ok); border-color: var(--ok); }
+  .crypto-wallet .cw-warning { display: flex; gap: 6px; margin-top: 0.75rem; font-size: 12px; line-height: 1.4; color: #8a5300; background: #fff8e6; border: 1px solid #ffe1a3; border-radius: 6px; padding: 8px 10px; }
+
   .pm-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
   .pm-tab { padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.15s; background: white; }
   .pm-tab.active { background: var(--accent2); color: white; border-color: var(--accent2); }
@@ -268,6 +283,11 @@
     <div class="crypto-token-select" id="crypto-token-select" style="display:none;">
       <label>¿Con qué token vas a pagar?</label>
       <div class="crypto-token-tabs" id="crypto-token-tabs"></div>
+      <div class="crypto-network-select" id="crypto-network-select" style="display:none;">
+        <label>Red de envío</label>
+        <div class="crypto-network-tabs" id="crypto-network-tabs"></div>
+      </div>
+      <div class="crypto-wallet" id="crypto-wallet" style="display:none;"></div>
     </div>
     <div id="pm-panels"></div>
     <div class="info-text" style="margin-top:0.75rem;">El pago inicial activa el proyecto. Adjuntá el comprobante en el siguiente paso.</div>
@@ -397,8 +417,9 @@ let currentTotalUSD = 0;      // total operativo — SIEMPRE en USD (moneda base
 let totalIsQuote    = false;  // true en estado "A cotizar" (sin monto numérico)
 let rateConversions = null;   // conversiones cacheadas para currentTotalUSD, o null
 let rateRatesUsed   = null;   // tasas empleadas por símbolo ({from,to,value}), o null
-let cryptoTokens    = [];     // tokens cripto disponibles (derivados de payment_info)
-let selectedToken   = null;   // token cripto elegido para pagar, o null
+let cryptoTokens    = [];     // [{symbol, networks:[{name,address,qr,warning}]}] desde payment_info
+let selectedToken   = null;   // símbolo del token cripto elegido, o null
+let selectedNetwork = null;   // objeto red elegida ({name,address,qr,warning}), o null
 let rateAgeSeconds  = null;   // antigüedad de la cotización cacheada (segundos), o null
 
 // ═══════════════════════════════════════════════════════
@@ -759,16 +780,10 @@ function renderPaymentMethods() {
     tab.onclick = () => switchPayTab(m.key);
     tabs.appendChild(tab);
 
-    // Derivar tokens cripto dinámicamente desde payment_info (sin hardcodear).
-    // Cada label es del tipo "BTC — BNB Chain (BEP20)": tomamos el símbolo
-    // inicial y deduplicamos (varias redes comparten el mismo token).
-    if ((m.currency || '') === 'CRYPTO') {
-      const seen = new Set();
-      cryptoTokens = (m.fields || [])
-        .filter(f => f.value)
-        .map(f => String(f.label).split(/[—-]/)[0].trim().toUpperCase())
-        .filter(sym => sym && !seen.has(sym) && seen.add(sym));
-    }
+    // Cripto usa el modelo tokens→networks; su detalle (QR, dirección,
+    // advertencia) se muestra en el selector, no en el panel de campos.
+    const isCrypto = (m.currency || '') === 'CRYPTO';
+    if (isCrypto) cryptoTokens = m.tokens || [];
 
     const rows = (m.fields || [])
       .filter(f => f.value)   // ocultar campos sin valor (ej. wallets vacías)
@@ -778,12 +793,12 @@ function renderPaymentMethods() {
       .map(n => `<div class="info-text" style="margin-top:6px;">${esc(n)}</div>`)
       .join('');
     const empty = rows ? '' :
-      '<div class="info-text">Datos disponibles a pedido — te los enviaremos por email.</div>';
+      (isCrypto ? '' : '<div class="info-text">Datos disponibles a pedido — te los enviaremos por email.</div>');
 
     const panel = document.createElement('div');
     panel.className = 'pm-panel' + (i === 0 ? ' visible' : '');
     panel.id = 'tab-' + m.key;
-    panel.innerHTML = `<div class="pm-detail">${rows || empty}</div>${notes}`;
+    panel.innerHTML = (rows ? `<div class="pm-detail">${rows}</div>` : empty) + notes;
     panels.appendChild(panel);
   });
 
@@ -800,13 +815,15 @@ function switchPayTab(key) {
     document.getElementById('tab-' + m.key).classList.toggle('visible', m.key === key);
   });
 
-  // El método cripto exige elegir un token antes de mostrar la conversión.
+  // El método cripto exige elegir un token (y su red) antes de pagar.
   const method = PAYMENT_METHODS.find(m => m.key === key);
   const isCrypto = method && (method.currency || '') === 'CRYPTO';
   const selBox = document.getElementById('crypto-token-select');
   if (isCrypto) {
-    selectedToken = null;   // forzar elección explícita del token
+    selectedToken = null; selectedNetwork = null;   // elección explícita
     renderCryptoTokens();
+    renderCryptoNetworks();
+    renderCryptoWallet();
     selBox.style.display = 'block';
   } else {
     selBox.style.display = 'none';
@@ -822,7 +839,8 @@ function switchPayTab(key) {
 function renderCryptoTokens() {
   const box = document.getElementById('crypto-token-tabs');
   box.innerHTML = '';
-  cryptoTokens.forEach(sym => {
+  cryptoTokens.forEach(tok => {
+    const sym = tok.symbol;
     const t = document.createElement('div');
     t.className = 'crypto-token-tab' + (sym === selectedToken ? ' active' : '');
     t.dataset.token = sym;
@@ -837,7 +855,79 @@ function selectToken(sym) {
   selectedToken = sym;
   document.querySelectorAll('.crypto-token-tab').forEach(el =>
     el.classList.toggle('active', el.dataset.token === sym));
+
+  // Al elegir token, se ofrecen sus redes. Si hay una sola, se auto-selecciona.
+  const tok = cryptoTokens.find(t => t.symbol === sym);
+  const nets = (tok && tok.networks) || [];
+  selectedNetwork = nets.length === 1 ? nets[0] : null;
+  renderCryptoNetworks();
+  renderCryptoWallet();
   renderTotalDisplay();   // conversiones ya cacheadas para el total actual
+}
+
+// Selector de red para el token elegido (BEP20, TRC20, Optimism, Solana…).
+function renderCryptoNetworks() {
+  const wrap = document.getElementById('crypto-network-select');
+  const box  = document.getElementById('crypto-network-tabs');
+  box.innerHTML = '';
+  const tok = cryptoTokens.find(t => t.symbol === selectedToken);
+  const nets = (tok && tok.networks) || [];
+  if (!selectedToken || nets.length <= 1) { wrap.style.display = 'none'; return; }
+
+  wrap.style.display = 'block';
+  nets.forEach(net => {
+    const t = document.createElement('div');
+    t.className = 'crypto-network-tab' + (net === selectedNetwork ? ' active' : '');
+    t.textContent = net.name;
+    t.onclick = () => selectNetwork(net);
+    box.appendChild(t);
+  });
+}
+
+function selectNetwork(net) {
+  selectedNetwork = net;
+  renderCryptoNetworks();
+  renderCryptoWallet();
+}
+
+// Muestra QR, dirección copiable y advertencia de red de la red elegida.
+function renderCryptoWallet() {
+  const box = document.getElementById('crypto-wallet');
+  if (!selectedToken || !selectedNetwork) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+  const net = selectedNetwork;
+  box.style.display = 'block';
+  box.innerHTML = `
+    ${net.qr ? `<img class="cw-qr" src="${esc(net.qr)}" alt="QR ${esc(selectedToken)} — ${esc(net.name)}">` : ''}
+    <div class="cw-addr-label">Dirección ${esc(selectedToken)} — ${esc(net.name)}</div>
+    <div class="cw-addr-row">
+      <div class="cw-addr" id="cw-addr">${esc(net.address)}</div>
+      <button type="button" class="cw-copy" id="cw-copy">Copiar</button>
+    </div>
+    ${net.warning ? `<div class="cw-warning">⚠️ <span>${esc(net.warning)}</span></div>` : ''}
+  `;
+  const btn = document.getElementById('cw-copy');
+  if (btn) btn.onclick = () => copyWalletAddress(net.address, btn);
+}
+
+async function copyWalletAddress(addr, btn) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(addr);
+    } else {
+      // Fallback para contextos sin Clipboard API (http, navegadores viejos).
+      const ta = document.createElement('textarea');
+      ta.value = addr; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    btn.textContent = '✓ Copiado'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 1800);
+  } catch (err) {
+    console.error('[Wallet] Copy failed:', err);
+    btn.textContent = 'Error';
+    setTimeout(() => { btn.textContent = 'Copiar'; }, 1800);
+  }
 }
 
 // ═══════════════════════════════════════════════════════

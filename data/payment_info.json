@@ -50,18 +50,72 @@
       "label": "Cripto",
       "currency": "CRYPTO",
       "enabled": true,
-      "fields": [
-        { "label": "BTC — BNB Chain (BEP20)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
-        { "label": "ETH — BNB Chain (BEP20)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
-        { "label": "ETH — Optimism (L2)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
-        { "label": "USDT — BNB Chain (BEP20)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
-        { "label": "USDT — Tron (TRC20)", "value": "THH5PJjCSQGeBgULuo4kDBhnzTaUmAhK3K" },
-        { "label": "USDC — BNB Chain (BEP20)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
-        { "label": "USDC — Solana", "value": "EFqvdcF5Sfvm561rXRjFYkFNp4EStrN4aAGZduRfbmz1" }
+      "tokens": [
+        {
+          "symbol": "BTC",
+          "networks": [
+            {
+              "name": "BNB Chain (BEP20)",
+              "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
+              "qr": "assets/1000001292.jpg",
+              "warning": "Enviá únicamente BTC mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+            }
+          ]
+        },
+        {
+          "symbol": "ETH",
+          "networks": [
+            {
+              "name": "BNB Chain (BEP20)",
+              "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
+              "qr": "assets/1000001292.jpg",
+              "warning": "Enviá únicamente ETH mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+            },
+            {
+              "name": "Optimism (L2 de Ethereum)",
+              "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
+              "qr": "assets/1000001298.jpg",
+              "warning": "Enviá únicamente ETH mediante la red Optimism (L2 de Ethereum). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+            }
+          ]
+        },
+        {
+          "symbol": "USDT",
+          "networks": [
+            {
+              "name": "BNB Chain (BEP20)",
+              "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
+              "qr": "assets/1000001292.jpg",
+              "warning": "Enviá únicamente USDT mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+            },
+            {
+              "name": "Tron (TRC20)",
+              "address": "THH5PJjCSQGeBgULuo4kDBhnzTaUmAhK3K",
+              "qr": "assets/1000001294.jpg",
+              "warning": "Enviá únicamente USDT mediante la red Tron (TRC20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+            }
+          ]
+        },
+        {
+          "symbol": "USDC",
+          "networks": [
+            {
+              "name": "BNB Chain (BEP20)",
+              "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
+              "qr": "assets/1000001292.jpg",
+              "warning": "Enviá únicamente USDC mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+            },
+            {
+              "name": "Solana",
+              "address": "EFqvdcF5Sfvm561rXRjFYkFNp4EStrN4aAGZduRfbmz1",
+              "qr": "assets/1000001296.jpg",
+              "warning": "Enviá únicamente USDC mediante la red Solana. El uso de una red incorrecta puede provocar la pérdida de los fondos."
+            }
+          ]
+        }
       ],
       "notes": [
-        "Guardá la imagen QR de cada red antes de compartir la dirección.",
-        "USDT/USDC: 1 USD = 1 USDt/USDc."
+        "Verificá siempre la red antes de enviar. USDT/USDC: 1 USD = 1 USDt/USDc."
       ]
     }
   ]
