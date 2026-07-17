@@ -89,6 +89,13 @@
   .total-display { background: var(--brand); color: white; border-radius: 8px; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; }
   .total-display .td-label { font-size: 12px; opacity: 0.7; }
   .total-display .td-amount { font-size: 22px; font-weight: 700; color: #ff8fa3; }
+  .total-display .td-rate { font-size: 11px; opacity: 0.7; margin-top: 2px; font-family: monospace; }
+
+  .crypto-token-select { margin-bottom: 0.75rem; }
+  .crypto-token-select label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+  .crypto-token-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .crypto-token-tab { padding: 4px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.15s; background: white; }
+  .crypto-token-tab.active { background: var(--brand); color: white; border-color: var(--brand); }
 
   .pm-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
   .pm-tab { padding: 5px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.15s; background: white; }
@@ -241,9 +248,16 @@
     <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);">Método de pago preferido</div>
     <div class="total-display">
       <div><div class="td-label">TOTAL A PAGAR</div><div class="td-label" id="total-mode-label">Pago por hitos</div></div>
-      <div class="td-amount" id="total-display">USD 0.00</div>
+      <div style="text-align:right;">
+        <div class="td-amount" id="total-display">USD 0.00</div>
+        <div class="td-rate" id="total-rate"></div>
+      </div>
     </div>
     <div class="pm-tabs" id="pm-tabs"></div>
+    <div class="crypto-token-select" id="crypto-token-select" style="display:none;">
+      <label>¿Con qué token vas a pagar?</label>
+      <div class="crypto-token-tabs" id="crypto-token-tabs"></div>
+    </div>
     <div id="pm-panels"></div>
     <div class="info-text" style="margin-top:0.75rem;">El pago inicial activa el proyecto. Adjuntá el comprobante en el siguiente paso.</div>
   </div>
@@ -371,6 +385,9 @@ let appliedDiscount = null;   // {code,type,value,final_price,amount_saved,...} 
 let currentTotalUSD = 0;      // total operativo — SIEMPRE en USD (moneda base)
 let totalIsQuote    = false;  // true en estado "A cotizar" (sin monto numérico)
 let rateConversions = null;   // conversiones cacheadas para currentTotalUSD, o null
+let rateRatesUsed   = null;   // tasas empleadas por símbolo ({from,to,value}), o null
+let cryptoTokens    = [];     // tokens cripto disponibles (derivados de payment_info)
+let selectedToken   = null;   // token cripto elegido para pagar, o null
 
 // ═══════════════════════════════════════════════════════
 // BOOT
@@ -474,25 +491,51 @@ function fmtCurrency(code, value) {
   return (CURRENCY_FMT[code] || (v => `${code} ${v.toLocaleString()}`))(value);
 }
 
+// Formatea "1 {from} = {value} {to}" con el locale/decimales de cada moneda,
+// para que el usuario vea la cotización exacta usada en el cálculo.
+function fmtRateLine(ru) {
+  if (!ru) return '';
+  const dec = { EUR: 2, ARS: 3, USD: 2 };   // decimales por moneda destino fiat
+  const n = ru.value.toLocaleString('es-AR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: ru.to in dec ? dec[ru.to] : 2,
+  });
+  return `1 ${ru.from} = ${n} ${ru.to}`;
+}
+
 // Pide al backend las conversiones para el total USD actual y refresca la
 // vista. El total operativo nunca cambia: esto es solo presentación.
 async function refreshConversions() {
-  if (totalIsQuote || !currentTotalUSD) { rateConversions = null; renderTotalDisplay(); return; }
+  if (totalIsQuote || !currentTotalUSD) {
+    rateConversions = null; rateRatesUsed = null; renderTotalDisplay(); return;
+  }
   try {
     const res = await fetch(`${API_BASE}/api/rates?amount=${encodeURIComponent(currentTotalUSD)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     rateConversions = data.conversions || null;
+    rateRatesUsed   = data.rates_used || null;
   } catch (err) {
     console.error('[Rates] Conversion failed:', err);
-    rateConversions = null;   // fallback: mostramos el USD base
+    rateConversions = null; rateRatesUsed = null;   // fallback: USD base
   }
   renderTotalDisplay();
 }
 
-// Renderiza div.total-display según la pestaña de pago seleccionada.
+// Devuelve el importe convertido para un símbolo, buscando en el nivel
+// superior (fiat) o dentro de CRYPTO.
+function conversionFor(code) {
+  if (!rateConversions) return undefined;
+  if (code in rateConversions && code !== 'CRYPTO') return rateConversions[code];
+  return (rateConversions.CRYPTO || {})[code];
+}
+
+// Renderiza div.total-display (y su línea de cotización) según la pestaña de
+// pago seleccionada. Para cripto muestra SOLO el token elegido.
 function renderTotalDisplay() {
-  const el = document.getElementById('total-display');
+  const el   = document.getElementById('total-display');
+  const rate = document.getElementById('total-rate');
+  rate.textContent = '';
   if (totalIsQuote) { el.textContent = 'A cotizar'; return; }
 
   const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
@@ -501,21 +544,21 @@ function renderTotalDisplay() {
   // Sin conversiones (aún cargando o proveedor caído): mostrar USD base.
   if (!rateConversions) { el.textContent = fmtCurrency('USD', currentTotalUSD); return; }
 
-  if (currency === 'CRYPTO') {
-    // El método cripto agrupa varias monedas: las mostramos todas.
-    const crypto = rateConversions.CRYPTO || {};
-    const parts = Object.entries(crypto)
-      .filter(([, v]) => v != null)
-      .map(([code, v]) => fmtCurrency(code, v));
-    el.innerHTML = parts.length
-      ? parts.map(p => `<div>${p}</div>`).join('')
-      : fmtCurrency('USD', currentTotalUSD);
+  // Símbolo a mostrar: en cripto, el token elegido; si no, la moneda fiat.
+  const code = currency === 'CRYPTO' ? selectedToken : currency;
+
+  if (currency === 'CRYPTO' && !code) {
+    // Aún no eligió token: invitamos a seleccionarlo antes de convertir.
+    el.textContent = 'Elegí un token';
     return;
   }
 
-  const value = rateConversions[currency];
-  el.textContent = value != null ? fmtCurrency(currency, value)
+  const value = conversionFor(code);
+  el.textContent = value != null ? fmtCurrency(code, value)
                                   : fmtCurrency('USD', currentTotalUSD);
+  if (value != null && rateRatesUsed && rateRatesUsed[code]) {
+    rate.textContent = fmtRateLine(rateRatesUsed[code]);
+  }
 }
 
 function updateMilestones() {
@@ -670,6 +713,17 @@ function renderPaymentMethods() {
     tab.onclick = () => switchPayTab(m.key);
     tabs.appendChild(tab);
 
+    // Derivar tokens cripto dinámicamente desde payment_info (sin hardcodear).
+    // Cada label es del tipo "BTC — BNB Chain (BEP20)": tomamos el símbolo
+    // inicial y deduplicamos (varias redes comparten el mismo token).
+    if ((m.currency || '') === 'CRYPTO') {
+      const seen = new Set();
+      cryptoTokens = (m.fields || [])
+        .filter(f => f.value)
+        .map(f => String(f.label).split(/[—-]/)[0].trim().toUpperCase())
+        .filter(sym => sym && !seen.has(sym) && seen.add(sym));
+    }
+
     const rows = (m.fields || [])
       .filter(f => f.value)   // ocultar campos sin valor (ej. wallets vacías)
       .map(f => `<div class="pm-field"><span>${esc(f.label)}</span><span>${esc(f.value)}</span></div>`)
@@ -699,9 +753,42 @@ function switchPayTab(key) {
     document.querySelectorAll('.pm-tab')[i].classList.toggle('active', m.key === key);
     document.getElementById('tab-' + m.key).classList.toggle('visible', m.key === key);
   });
+
+  // El método cripto exige elegir un token antes de mostrar la conversión.
+  const method = PAYMENT_METHODS.find(m => m.key === key);
+  const isCrypto = method && (method.currency || '') === 'CRYPTO';
+  const selBox = document.getElementById('crypto-token-select');
+  if (isCrypto) {
+    selectedToken = null;   // forzar elección explícita del token
+    renderCryptoTokens();
+    selBox.style.display = 'block';
+  } else {
+    selBox.style.display = 'none';
+  }
+
   // El total se muestra en la moneda del método elegido (sin recargar).
   if (rateConversions) renderTotalDisplay();
   else refreshConversions();
+}
+
+// Construye el selector de token cripto a partir de cryptoTokens (dinámico).
+function renderCryptoTokens() {
+  const box = document.getElementById('crypto-token-tabs');
+  box.innerHTML = '';
+  cryptoTokens.forEach(sym => {
+    const t = document.createElement('div');
+    t.className = 'crypto-token-tab' + (sym === selectedToken ? ' active' : '');
+    t.textContent = sym;
+    t.onclick = () => selectToken(sym);
+    box.appendChild(t);
+  });
+}
+
+function selectToken(sym) {
+  selectedToken = sym;
+  document.querySelectorAll('.crypto-token-tab').forEach(el =>
+    el.classList.toggle('active', el.textContent === sym));
+  renderTotalDisplay();   // conversiones ya cacheadas para el total actual
 }
 
 // ═══════════════════════════════════════════════════════

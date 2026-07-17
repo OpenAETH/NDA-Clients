@@ -126,24 +126,46 @@ async def convert(amount_usd: float) -> dict:
             "CRYPTO": { "BTC": 0.021534, "ETH": 0.842311,
                          "USDT": 2500.0, "USDC": 2500.0 }
           },
+          "rates_used": {
+            # Tasa empleada, autodescriptiva: "1 {from} = {value} {to}".
+            #   EUR → 1 USD = 0.86 EUR      (fiat: from=USD)
+            #   ARS → 1 USD = 1395 ARS
+            #   BTC → 1 BTC = 118500 USD    (cripto: from=activo)
+            #   USDT→ 1 USDT = 1 USD        (stablecoin anclada)
+            "EUR":  { "from": "USD", "to": "EUR", "value": 0.857408 },
+            "ARS":  { "from": "USD", "to": "ARS", "value": 1392.84 },
+            "BTC":  { "from": "BTC", "to": "USD", "value": 118500.0 },
+            "ETH":  { "from": "ETH", "to": "USD", "value": 2968.0 },
+            "USDT": { "from": "USDT", "to": "USD", "value": 1.0 },
+            "USDC": { "from": "USDC", "to": "USD", "value": 1.0 }
+          },
           "stale": false          # true si se sirvieron datos cacheados vencidos
         }
 
-    Un símbolo sin tasa disponible se devuelve como None.
+    Un símbolo sin tasa disponible se devuelve como None (y sin entrada en
+    `rates_used`).
     """
     rates = await get_rates()
 
     conversions = {"USD": round(amount_usd, 2)}
+    rates_used = {}
     for symbol in FIAT_SYMBOLS:
         rate = rates.get(symbol)
         conversions[symbol] = round(amount_usd * rate, 2) if rate else None
+        if rate:
+            # 1 USD = <rate> <symbol>
+            rates_used[symbol] = {"from": "USD", "to": symbol, "value": round(rate, 6)}
 
     crypto = {}
     for symbol in CRYPTO_IDS:
-        rate = rates.get(symbol)
+        rate = rates.get(symbol)  # cripto por 1 USD
         crypto[symbol] = round(amount_usd * rate, 8) if rate else None
+        if rate:
+            # 1 <symbol> = <precio USD> USD  →  precio = 1/rate
+            rates_used[symbol] = {"from": symbol, "to": "USD", "value": round(1.0 / rate, 2)}
     for symbol in STABLECOINS:  # ancladas 1:1 al USD
         crypto[symbol] = round(amount_usd, 2)
+        rates_used[symbol] = {"from": symbol, "to": "USD", "value": 1.0}
     conversions["CRYPTO"] = crypto
 
     stale = (time.monotonic() - _cache["fetched_at"]) >= CACHE_TTL_SECONDS
@@ -152,5 +174,6 @@ async def convert(amount_usd: float) -> dict:
         "base_currency": "USD",
         "base_amount": round(amount_usd, 2),
         "conversions": conversions,
+        "rates_used": rates_used,
         "stale": stale,
     }
