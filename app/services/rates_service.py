@@ -26,12 +26,16 @@ import httpx
 
 # ── Proveedores ───────────────────────────────────────────────────
 FIAT_URL   = "https://open.er-api.com/v6/latest/USD"
-CRYPTO_URL = "https://api.coingecko.com/api/v3/simple/price"
+
+# Cripto: proveedores en cadena de fallback. Coinbase es el primario porque es
+# keyless y estable (CoinGecko en su tier gratuito responde 429 con facilidad).
+COINBASE_URL  = "https://api.coinbase.com/v2/prices/{pair}/spot"   # pair = BTC-USD
+COINGECKO_URL = "https://api.coingecko.com/api/v3/simple/price"
 
 # Símbolos fiat a extraer de la respuesta de open.er-api (tasas por 1 USD).
 FIAT_SYMBOLS = ["EUR", "ARS"]
 
-# Cripto: símbolo visible → id de CoinGecko.
+# Cripto: símbolo visible → id de CoinGecko (usado solo por el fallback).
 CRYPTO_IDS = {"BTC": "bitcoin", "ETH": "ethereum"}
 
 # Stablecoins ancladas al USD — no requieren cotización externa.
@@ -60,25 +64,62 @@ async def _fetch_fiat(client: httpx.AsyncClient) -> dict:
         return {}
 
 
-async def _fetch_crypto(client: httpx.AsyncClient) -> dict:
+async def _fetch_coinbase(client: httpx.AsyncClient) -> dict:
     """
-    Tasas USD→cripto desde CoinGecko. El proveedor da el precio de 1 unidad
-    de cripto en USD; lo invertimos a "cripto por 1 USD". Devuelve {} si falla.
+    Tasas USD→cripto desde Coinbase (una request por par). Keyless y estable.
+    La API da el precio de 1 unidad de cripto en USD; lo invertimos a "cripto
+    por 1 USD". Devuelve solo los símbolos que respondieron OK.
     """
+    out = {}
+    for symbol in CRYPTO_IDS:
+        try:
+            resp = await client.get(COINBASE_URL.format(pair=f"{symbol}-USD"))
+            resp.raise_for_status()
+            price_usd = float(resp.json()["data"]["amount"])
+            if price_usd > 0:
+                out[symbol] = 1.0 / price_usd
+        except (httpx.HTTPError, ValueError, KeyError, ZeroDivisionError) as e:
+            print(f"[RATES] Coinbase error for {symbol}: {e}")
+    return out
+
+
+async def _fetch_coingecko(client: httpx.AsyncClient, symbols: list) -> dict:
+    """
+    Fallback: tasas USD→cripto desde CoinGecko para los `symbols` pedidos.
+    Mismo formato de salida que Coinbase ("cripto por 1 USD"). {} si falla.
+    """
+    if not symbols:
+        return {}
     try:
-        ids = ",".join(CRYPTO_IDS.values())
+        ids = ",".join(CRYPTO_IDS[s] for s in symbols)
         resp = await client.get(
-            CRYPTO_URL, params={"ids": ids, "vs_currencies": "usd"}
+            COINGECKO_URL, params={"ids": ids, "vs_currencies": "usd"}
         )
         resp.raise_for_status()
         data = resp.json()
         out = {}
-        for symbol, gecko_id in CRYPTO_IDS.items():
-            price_usd = data.get(gecko_id, {}).get("usd")
+        for symbol in symbols:
+            price_usd = data.get(CRYPTO_IDS[symbol], {}).get("usd")
             if price_usd:  # precio de 1 cripto en USD, > 0
                 out[symbol] = 1.0 / float(price_usd)
         return out
     except (httpx.HTTPError, ValueError, KeyError, ZeroDivisionError) as e:
+        print(f"[RATES] CoinGecko error: {e}")
+        return {}
+
+
+async def _fetch_crypto(client: httpx.AsyncClient) -> dict:
+    """
+    Tasas USD→cripto con fallback: Coinbase primero; para los símbolos que
+    falten, se intenta CoinGecko. Devuelve {} si ninguno responde.
+    """
+    try:
+        rates = await _fetch_coinbase(client)
+        missing = [s for s in CRYPTO_IDS if s not in rates]
+        if missing:
+            rates.update(await _fetch_coingecko(client, missing))
+        return rates
+    except Exception as e:  # noqa: BLE001 — nunca propagar; el merge conserva caché
         print(f"[RATES] Crypto provider error: {e}")
         return {}
 
