@@ -18,6 +18,7 @@ API backend para gestión de contratos NDA, engagements de clientes y pagos por 
 | Almacenamiento | Cloudflare R2 (PDFs y comprobantes) |
 | Email | Resend |
 | PDF | ReportLab |
+| Cotizaciones | Coinbase + CoinGecko (cripto) · open.er-api (fiat) — keyless, con caché |
 | Deploy | Render (Web Service + disco persistente) |
 
 ---
@@ -55,12 +56,14 @@ app/
 │   ├── products.py      # CRUD catálogo de productos/servicios
 │   ├── payment_info.py  # Datos de pago (transferencias/cripto)
 │   ├── discounts.py     # Validación de códigos de descuento
+│   ├── rates.py         # Conversión de moneda del total (USD → fiat/cripto)
 │   ├── engagements.py   # Firma NDA, generación PDF, emails
 │   └── payments.py      # Upload comprobantes, verificación hitos
 ├── services/
 │   ├── pdf_service.py   # Generación NDA en PDF con ReportLab
 │   ├── email_service.py # Envío de emails via Resend
-│   └── storage_service.py # Upload/presigned URLs en R2
+│   ├── storage_service.py # Upload/presigned URLs en R2
+│   └── rates_service.py # Cotizaciones fiat/cripto con caché (5 min) + fallback
 └── main.py              # App FastAPI, CORS, lifespan, static
 data/
 ├── products.json        # Catálogo (versionado, editable)
@@ -183,6 +186,7 @@ Detalle completo en [`DEPLOY.md`](DEPLOY.md).
 | DELETE | `/api/products/{code}` | Desactivar producto (soft-delete) |
 | GET | `/api/payment-info` | Datos de pago habilitados |
 | GET | `/api/discounts/validate` | Validar código y previsualizar precio |
+| GET | `/api/rates?amount=` | Convertir un monto USD a EUR/ARS/cripto (solo visualización) |
 
 ### Engagements
 | Método | Ruta | Descripción |
@@ -232,6 +236,48 @@ El cliente ingresa el código en el formulario; `GET /api/discounts/validate` lo
 ### Monto manual (CUSTOM y productos "a cotizar")
 
 Los productos sin `base_price` (p. ej. `CUSTOM`) piden un **monto acordado** en el formulario. Ese importe (`agreed_price`) se usa como precio base y admite código de descuento encima. El backend rechaza (`422`) contratar este tipo de producto sin un monto válido (`> 0`).
+
+---
+
+## Conversión de moneda (solo visualización)
+
+El total del formulario se calcula **siempre en USD** (moneda base). La conversión a otras monedas es únicamente informativa: se muestra el equivalente según el método de pago que el cliente elija, sin alterar el precio operativo ni lo que se guarda o se firma en el PDF (que quedan en USD).
+
+**Cómo funciona:**
+
+1. El frontend detecta el cambio de método de pago en `#pm-tabs` y pide `GET /api/rates?amount=<total_usd>`.
+2. El backend (`rates_service.py`) obtiene las tasas de proveedores externos **sin API key**:
+   - **Fiat (EUR, ARS)** → [open.er-api.com](https://open.er-api.com).
+   - **Cripto (BTC, ETH)** → **Coinbase** como primario y **CoinGecko** como fallback (Coinbase es estable y evita el `429` del tier gratuito de CoinGecko).
+   - **USDT/USDC** → stablecoins ancladas 1:1 al USD; no se consultan.
+3. Las tasas se **cachean 5 min** en memoria. Ante fallo de un proveedor se reutiliza el último valor válido (y se marca `stale`), de modo que el pago nunca se bloquea por FX.
+4. El frontend actualiza `div.total-display` en vivo: importe convertido, referencia en USD, la cotización usada (`1 BTC = 63.100,13 USD`) y la antigüedad del dato (`Cotización actualizada hace 2 min`).
+
+**Método cripto:** al elegirlo, el formulario pide **qué token** se usará. Los tokens se derivan dinámicamente de `payment_info.json` (no hardcodeados) y `total-display` muestra solo el activo seleccionado.
+
+**Ejemplo de respuesta de `/api/rates?amount=2500`:**
+
+```json
+{
+  "base_currency": "USD",
+  "base_amount": 2500.0,
+  "conversions": {
+    "USD": 2500.0,
+    "EUR": 2143.52,
+    "ARS": 3482100.0,
+    "CRYPTO": { "BTC": 0.021534, "ETH": 0.842311, "USDT": 2500.0, "USDC": 2500.0 }
+  },
+  "rates_used": {
+    "EUR":  { "from": "USD", "to": "EUR", "value": 0.857408 },
+    "ARS":  { "from": "USD", "to": "ARS", "value": 1392.84 },
+    "BTC":  { "from": "BTC", "to": "USD", "value": 118500.0 }
+  },
+  "age_seconds": 42,
+  "stale": false
+}
+```
+
+> **Extensible:** para agregar una moneda fiat, sumá su símbolo a `FIAT_SYMBOLS`; para una cripto, a `CRYPTO_IDS` (con su id de CoinGecko). El frontend la formatea automáticamente vía `CURRENCY_FMT`.
 
 ---
 
