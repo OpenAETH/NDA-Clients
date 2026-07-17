@@ -51,16 +51,17 @@
       "currency": "CRYPTO",
       "enabled": true,
       "fields": [
-        { "label": "BTC — BNB Chain (BEP20)", "value": "" },
-        { "label": "ETH — BNB Chain (BEP20)", "value": "" },
-        { "label": "ETH — Optimism (L2)", "value": "" },
-        { "label": "USDT — BNB Chain (BEP20)", "value": "" },
-        { "label": "USDT — Tron (TRC20)", "value": "" },
-        { "label": "USDC — BNB Chain (BEP20)", "value": "" },
-        { "label": "USDC — Solana", "value": "" }
+        { "label": "BTC — BNB Chain (BEP20)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
+        { "label": "ETH — BNB Chain (BEP20)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
+        { "label": "ETH — Optimism (L2)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
+        { "label": "USDT — BNB Chain (BEP20)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
+        { "label": "USDT — Tron (TRC20)", "value": "THH5PJjCSQGeBgULuo4kDBhnzTaUmAhK3K" },
+        { "label": "USDC — BNB Chain (BEP20)", "value": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5" },
+        { "label": "USDC — Solana", "value": "EFqvdcF5Sfvm561rXRjFYkFNp4EStrN4aAGZduRfbmz1" }
       ],
       "notes": [
-        "Completá las direcciones de wallet en data/payment_info.json antes de habilitar cripto."
+        "Guardá la imagen QR de cada red antes de compartir la dirección.",
+        "USDT/USDC: 1 USD = 1 USDt/USDc."
       ]
     }
   ]

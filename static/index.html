@@ -237,12 +237,12 @@
       </div>
       <div id="discount-msg" class="discount-msg" style="display:none;"></div>
     </div>
-    <div class="total-display">
-      <div><div class="td-label">TOTAL A PAGAR</div><div class="td-label" id="total-mode-label">Pago por hitos</div></div>
-      <div class="td-amount" id="total-display">$0</div>
-    </div>
     <div class="divider"></div>
     <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);">Método de pago preferido</div>
+    <div class="total-display">
+      <div><div class="td-label">TOTAL A PAGAR</div><div class="td-label" id="total-mode-label">Pago por hitos</div></div>
+      <div class="td-amount" id="total-display">USD 0.00</div>
+    </div>
     <div class="pm-tabs" id="pm-tabs"></div>
     <div id="pm-panels"></div>
     <div class="info-text" style="margin-top:0.75rem;">El pago inicial activa el proyecto. Adjuntá el comprobante en el siguiente paso.</div>
@@ -368,6 +368,9 @@ let PAYMENT_METHODS = [];
 let selectedPayKey  = null;
 let customAmount    = null;   // monto manual para CUSTOM (USD)
 let appliedDiscount = null;   // {code,type,value,final_price,amount_saved,...} o null
+let currentTotalUSD = 0;      // total operativo — SIEMPRE en USD (moneda base)
+let totalIsQuote    = false;  // true en estado "A cotizar" (sin monto numérico)
+let rateConversions = null;   // conversiones cacheadas para currentTotalUSD, o null
 
 // ═══════════════════════════════════════════════════════
 // BOOT
@@ -452,10 +455,77 @@ function selectPaymentMode(mode) {
 
 const fmtUSD = n => `$${Math.round(n).toLocaleString()}`;
 
+// ═══════════════════════════════════════════════════════
+// CURRENCY CONVERSION (solo visualización — el total operativo es USD)
+// ═══════════════════════════════════════════════════════
+// Formato por moneda. Cada fiat usa su locale; las criptos, decimales fijos.
+const CURRENCY_FMT = {
+  USD: v => 'USD ' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  EUR: v => 'EUR ' + v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  ARS: v => 'ARS ' + Math.round(v).toLocaleString('es-AR'),
+  BTC: v => 'BTC ' + v.toFixed(6),
+  ETH: v => 'ETH ' + v.toFixed(6),
+  USDT: v => 'USDT ' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+  USDC: v => 'USDC ' + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+};
+
+function fmtCurrency(code, value) {
+  if (value == null) return `${code} —`;
+  return (CURRENCY_FMT[code] || (v => `${code} ${v.toLocaleString()}`))(value);
+}
+
+// Pide al backend las conversiones para el total USD actual y refresca la
+// vista. El total operativo nunca cambia: esto es solo presentación.
+async function refreshConversions() {
+  if (totalIsQuote || !currentTotalUSD) { rateConversions = null; renderTotalDisplay(); return; }
+  try {
+    const res = await fetch(`${API_BASE}/api/rates?amount=${encodeURIComponent(currentTotalUSD)}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    rateConversions = data.conversions || null;
+  } catch (err) {
+    console.error('[Rates] Conversion failed:', err);
+    rateConversions = null;   // fallback: mostramos el USD base
+  }
+  renderTotalDisplay();
+}
+
+// Renderiza div.total-display según la pestaña de pago seleccionada.
+function renderTotalDisplay() {
+  const el = document.getElementById('total-display');
+  if (totalIsQuote) { el.textContent = 'A cotizar'; return; }
+
+  const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
+  const currency = method ? (method.currency || 'USD') : 'USD';
+
+  // Sin conversiones (aún cargando o proveedor caído): mostrar USD base.
+  if (!rateConversions) { el.textContent = fmtCurrency('USD', currentTotalUSD); return; }
+
+  if (currency === 'CRYPTO') {
+    // El método cripto agrupa varias monedas: las mostramos todas.
+    const crypto = rateConversions.CRYPTO || {};
+    const parts = Object.entries(crypto)
+      .filter(([, v]) => v != null)
+      .map(([code, v]) => fmtCurrency(code, v));
+    el.innerHTML = parts.length
+      ? parts.map(p => `<div>${p}</div>`).join('')
+      : fmtCurrency('USD', currentTotalUSD);
+    return;
+  }
+
+  const value = rateConversions[currency];
+  el.textContent = value != null ? fmtCurrency(currency, value)
+                                  : fmtCurrency('USD', currentTotalUSD);
+}
+
 function updateMilestones() {
   const tbody = document.getElementById('milestone-body');
   tbody.innerHTML = '';
-  if (!selectedProd) { document.getElementById('total-display').textContent = '$0'; return; }
+  if (!selectedProd) {
+    currentTotalUSD = 0; totalIsQuote = false; rateConversions = null;
+    renderTotalDisplay();
+    return;
+  }
 
   const base = effectiveBase();
   // El descuento por anticipado solo aplica a productos de catálogo con precio fijo.
@@ -465,7 +535,8 @@ function updateMilestones() {
     selectedProd.discount_pct ? `${selectedProd.discount_pct}% de descuento` : 'Sin descuento adicional';
 
   if (!base) {
-    document.getElementById('total-display').textContent = 'A cotizar';
+    currentTotalUSD = 0; totalIsQuote = true; rateConversions = null;
+    renderTotalDisplay();
     tbody.innerHTML = `<tr><td colspan="4" style="color:var(--muted);font-style:italic;">Ingresá el monto acordado para ver el detalle.</td></tr>`;
     return;
   }
@@ -504,7 +575,9 @@ function updateMilestones() {
     tbody.appendChild(tr2);
   }
 
-  document.getElementById('total-display').textContent = fmtUSD(total);
+  currentTotalUSD = total; totalIsQuote = false;
+  renderTotalDisplay();       // pinta el USD base al instante
+  refreshConversions();       // y actualiza con la moneda seleccionada
 }
 
 // ═══════════════════════════════════════════════════════
@@ -615,6 +688,9 @@ function renderPaymentMethods() {
   });
 
   selectedPayKey = PAYMENT_METHODS[0].key;
+  // Ya puede haber un total calculado antes de cargar los métodos: refrescar.
+  if (rateConversions) renderTotalDisplay();
+  else refreshConversions();
 }
 
 function switchPayTab(key) {
@@ -623,6 +699,9 @@ function switchPayTab(key) {
     document.querySelectorAll('.pm-tab')[i].classList.toggle('active', m.key === key);
     document.getElementById('tab-' + m.key).classList.toggle('visible', m.key === key);
   });
+  // El total se muestra en la moneda del método elegido (sin recargar).
+  if (rateConversions) renderTotalDisplay();
+  else refreshConversions();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -851,7 +930,9 @@ function generateLocalPdf(sigDataUrl) {
   const country = document.getElementById('client-country').value || 'N/D';
   const today   = new Date().toLocaleDateString('es-AR',{year:'numeric',month:'long',day:'numeric'});
   const prodName= selectedProd ? `${selectedProd.name} — ${selectedProd.full_name||''}` : 'N/D';
-  const totalAmt= document.getElementById('total-display').textContent;
+  // El total operativo del PDF es SIEMPRE en USD, independientemente de la
+  // moneda que se esté visualizando en pantalla.
+  const totalAmt= totalIsQuote ? 'A cotizar' : fmtUSD(currentTotalUSD);
   const modeLabel= paymentMode==='hitos'?'Pago por hitos':'Pago único anticipado';
 
   doc.setFillColor(245,246,250); doc.roundedRect(M,y,W-M*2,38,3,3,'F');
