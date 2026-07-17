@@ -209,12 +209,14 @@ async def convert(amount_usd: float) -> dict:
         rates_used[symbol] = {"from": symbol, "to": "USD", "value": 1.0}
     conversions["CRYPTO"] = crypto
 
-    stale = (time.monotonic() - _cache["fetched_at"]) >= CACHE_TTL_SECONDS
+    age = time.monotonic() - _cache["fetched_at"] if _cache["fetched_at"] else None
+    stale = age is not None and age >= CACHE_TTL_SECONDS
 
     return {
         "base_currency": "USD",
         "base_amount": round(amount_usd, 2),
         "conversions": conversions,
         "rates_used": rates_used,
+        "age_seconds": round(age) if age is not None else None,
         "stale": stale,
     }

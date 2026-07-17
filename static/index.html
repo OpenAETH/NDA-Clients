@@ -88,13 +88,22 @@
 
   .total-display { background: var(--brand); color: white; border-radius: 8px; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; }
   .total-display .td-label { font-size: 12px; opacity: 0.7; }
+  .total-display .td-base { font-size: 12px; opacity: 0.6; font-weight: 500; }
+  .total-display .td-base.hidden { display: none; }
   .total-display .td-amount { font-size: 22px; font-weight: 700; color: #ff8fa3; }
+  .total-display .td-amount.flip { animation: td-flip 180ms ease; }
+  @keyframes td-flip {
+    0%   { opacity: 0; transform: translateY(-4px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
   .total-display .td-rate { font-size: 11px; opacity: 0.7; margin-top: 2px; font-family: monospace; }
+  .total-display .td-age { font-size: 10px; opacity: 0.55; margin-top: 2px; }
 
   .crypto-token-select { margin-bottom: 0.75rem; }
   .crypto-token-select label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
   .crypto-token-tabs { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-  .crypto-token-tab { padding: 4px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.15s; background: white; }
+  .crypto-token-tab { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 20px; font-size: 12px; cursor: pointer; transition: all 0.15s; background: white; }
+  .crypto-token-tab .tok-icon { font-weight: 700; }
   .crypto-token-tab.active { background: var(--brand); color: white; border-color: var(--brand); }
 
   .pm-tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; margin-top: 1rem; }
@@ -249,8 +258,10 @@
     <div class="total-display">
       <div><div class="td-label">TOTAL A PAGAR</div><div class="td-label" id="total-mode-label">Pago por hitos</div></div>
       <div style="text-align:right;">
+        <div class="td-base" id="total-base">USD 0.00</div>
         <div class="td-amount" id="total-display">USD 0.00</div>
         <div class="td-rate" id="total-rate"></div>
+        <div class="td-age" id="total-age"></div>
       </div>
     </div>
     <div class="pm-tabs" id="pm-tabs"></div>
@@ -388,6 +399,7 @@ let rateConversions = null;   // conversiones cacheadas para currentTotalUSD, o 
 let rateRatesUsed   = null;   // tasas empleadas por símbolo ({from,to,value}), o null
 let cryptoTokens    = [];     // tokens cripto disponibles (derivados de payment_info)
 let selectedToken   = null;   // token cripto elegido para pagar, o null
+let rateAgeSeconds  = null;   // antigüedad de la cotización cacheada (segundos), o null
 
 // ═══════════════════════════════════════════════════════
 // BOOT
@@ -491,6 +503,17 @@ function fmtCurrency(code, value) {
   return (CURRENCY_FMT[code] || (v => `${code} ${v.toLocaleString()}`))(value);
 }
 
+// Íconos oficiales por token, para el reconocimiento visual en el selector.
+const TOKEN_ICONS = { BTC: '₿', ETH: 'Ξ', USDT: '₮', USDC: '＄' };
+
+// Texto de confianza según la antigüedad de la cotización.
+function fmtAge(seconds) {
+  if (seconds == null) return '';
+  if (seconds < 60)  return 'Cotización actualizada recién';
+  const min = Math.floor(seconds / 60);
+  return `Cotización actualizada hace ${min} min`;
+}
+
 // Formatea "1 {from} = {value} {to}" con el locale/decimales de cada moneda,
 // para que el usuario vea la cotización exacta usada en el cálculo.
 function fmtRateLine(ru) {
@@ -515,9 +538,10 @@ async function refreshConversions() {
     const data = await res.json();
     rateConversions = data.conversions || null;
     rateRatesUsed   = data.rates_used || null;
+    rateAgeSeconds  = data.age_seconds ?? null;
   } catch (err) {
     console.error('[Rates] Conversion failed:', err);
-    rateConversions = null; rateRatesUsed = null;   // fallback: USD base
+    rateConversions = null; rateRatesUsed = null; rateAgeSeconds = null;
   }
   renderTotalDisplay();
 }
@@ -530,34 +554,56 @@ function conversionFor(code) {
   return (rateConversions.CRYPTO || {})[code];
 }
 
-// Renderiza div.total-display (y su línea de cotización) según la pestaña de
-// pago seleccionada. Para cripto muestra SOLO el token elegido.
+// Aplica el texto al importe principal con una animación sutil si cambió.
+function setAmount(el, text) {
+  if (el.textContent === text) return;   // sin cambio → sin animación
+  el.textContent = text;
+  el.classList.remove('flip');
+  void el.offsetWidth;                   // reinicia la animación
+  el.classList.add('flip');
+}
+
+// Renderiza div.total-display (importe, moneda base, cotización y antigüedad)
+// según la pestaña de pago. Para cripto muestra SOLO el token elegido.
 function renderTotalDisplay() {
   const el   = document.getElementById('total-display');
+  const base = document.getElementById('total-base');
   const rate = document.getElementById('total-rate');
-  rate.textContent = '';
-  if (totalIsQuote) { el.textContent = 'A cotizar'; return; }
+  const age  = document.getElementById('total-age');
+  rate.textContent = ''; age.textContent = '';
+  base.classList.add('hidden');
+
+  if (totalIsQuote) { setAmount(el, 'A cotizar'); return; }
 
   const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
   const currency = method ? (method.currency || 'USD') : 'USD';
 
   // Sin conversiones (aún cargando o proveedor caído): mostrar USD base.
-  if (!rateConversions) { el.textContent = fmtCurrency('USD', currentTotalUSD); return; }
+  if (!rateConversions) { setAmount(el, fmtCurrency('USD', currentTotalUSD)); return; }
 
   // Símbolo a mostrar: en cripto, el token elegido; si no, la moneda fiat.
   const code = currency === 'CRYPTO' ? selectedToken : currency;
 
   if (currency === 'CRYPTO' && !code) {
     // Aún no eligió token: invitamos a seleccionarlo antes de convertir.
-    el.textContent = 'Elegí un token';
+    setAmount(el, 'Elegí un token');
     return;
   }
 
   const value = conversionFor(code);
-  el.textContent = value != null ? fmtCurrency(code, value)
-                                  : fmtCurrency('USD', currentTotalUSD);
+  const shown = value != null ? code : 'USD';
+  setAmount(el, value != null ? fmtCurrency(code, value)
+                              : fmtCurrency('USD', currentTotalUSD));
+
+  // Referencia siempre en la moneda base (USD), salvo que ya estemos en USD.
+  if (shown !== 'USD') {
+    base.textContent = fmtCurrency('USD', currentTotalUSD);
+    base.classList.remove('hidden');
+  }
+
   if (value != null && rateRatesUsed && rateRatesUsed[code]) {
     rate.textContent = fmtRateLine(rateRatesUsed[code]);
+    age.textContent  = fmtAge(rateAgeSeconds);
   }
 }
 
@@ -772,13 +818,16 @@ function switchPayTab(key) {
 }
 
 // Construye el selector de token cripto a partir de cryptoTokens (dinámico).
+// Cada botón muestra el ícono oficial del token + su símbolo.
 function renderCryptoTokens() {
   const box = document.getElementById('crypto-token-tabs');
   box.innerHTML = '';
   cryptoTokens.forEach(sym => {
     const t = document.createElement('div');
     t.className = 'crypto-token-tab' + (sym === selectedToken ? ' active' : '');
-    t.textContent = sym;
+    t.dataset.token = sym;
+    const icon = TOKEN_ICONS[sym];
+    t.innerHTML = (icon ? `<span class="tok-icon">${icon}</span>` : '') + esc(sym);
     t.onclick = () => selectToken(sym);
     box.appendChild(t);
   });
@@ -787,7 +836,7 @@ function renderCryptoTokens() {
 function selectToken(sym) {
   selectedToken = sym;
   document.querySelectorAll('.crypto-token-tab').forEach(el =>
-    el.classList.toggle('active', el.textContent === sym));
+    el.classList.toggle('active', el.dataset.token === sym));
   renderTotalDisplay();   // conversiones ya cacheadas para el total actual
 }
 
