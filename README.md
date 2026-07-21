@@ -70,7 +70,8 @@ data/
 ├── payment_info.json    # Datos de pago (versionado, editable)
 └── discount_codes.json  # Códigos de descuento (versionado, editable)
 static/
-└── index.html           # Frontend embebido
+├── index.html           # Frontend embebido
+└── assets/              # Imágenes QR de las wallets cripto (por red)
 ```
 
 > Los datos transaccionales (`clients/engagements/payments.json`) se crean en `TX_DATA_DIR` en runtime — no están en el repo.
@@ -212,7 +213,7 @@ Detalle completo en [`DEPLOY.md`](DEPLOY.md).
 Todo el catálogo es estático y editable a mano (sin base de datos). Editás el archivo, commiteás y redeployás:
 
 - **Productos** → `data/products.json` (código, precio, descuento por anticipado, hitos, badge).
-- **Datos de pago** → `data/payment_info.json` (ARS, USD, EUR, cripto). Cada método es una pestaña del formulario; `enabled: false` lo oculta, y los campos sin `value` no se muestran (útil para wallets aún sin dirección).
+- **Datos de pago** → `data/payment_info.json` (ARS, USD, EUR, cripto). Cada método es una pestaña del formulario; `enabled: false` lo oculta. Los métodos fiat usan `fields` (los campos sin `value` no se muestran); el método cripto usa `tokens → networks` con QR, dirección y advertencia por red (ver [Wallets cripto](#wallets-cripto-token--red--qr--dirección)).
 - **Códigos de descuento** → `data/discount_codes.json` (ver abajo).
 
 ### Códigos de descuento
@@ -254,6 +255,41 @@ El total del formulario se calcula **siempre en USD** (moneda base). La conversi
 4. El frontend actualiza `div.total-display` en vivo: importe convertido, referencia en USD, la cotización usada (`1 BTC = 63.100,13 USD`) y la antigüedad del dato (`Cotización actualizada hace 2 min`).
 
 **Método cripto:** al elegirlo, el formulario pide **qué token** se usará. Los tokens se derivan dinámicamente de `payment_info.json` (no hardcodeados) y `total-display` muestra solo el activo seleccionado.
+
+### Wallets cripto: token → red → QR + dirección
+
+El método cripto en `payment_info.json` usa un modelo **`tokens → networks`**: cada token declara las redes por las que se acepta, y cada red trae su dirección, su imagen QR y una advertencia de red. El flujo en el formulario es:
+
+1. El cliente elige el **token** (BTC, ETH, USDT, USDC).
+2. Elige la **red**. Si el token tiene una sola red, se **auto-selecciona** (p. ej. BTC → BNB Chain).
+3. Se muestra el **QR** de esa red, la **dirección copiable** (botón "Copiar", con fallback para contextos sin Clipboard API) y una **advertencia contextual** para evitar pérdida de fondos por red incorrecta.
+
+Redes soportadas actualmente:
+
+| Token | Redes | QR (`static/assets/`) |
+|---|---|---|
+| BTC | BNB Chain (BEP20) | `1000001292.jpg` |
+| ETH | BNB Chain (BEP20), Optimism | `1000001292.jpg`, `1000001298.jpg` |
+| USDT | BNB Chain (BEP20), Tron (TRC20) | `1000001292.jpg`, `1000001294.jpg` |
+| USDC | BNB Chain (BEP20), Solana | `1000001292.jpg`, `1000001296.jpg` |
+
+Estructura de cada token en `payment_info.json`:
+
+```json
+{
+  "symbol": "ETH",
+  "networks": [
+    {
+      "name": "Optimism (L2 de Ethereum)",
+      "address": "0x2e3c…",
+      "qr": "assets/1000001298.jpg",
+      "warning": "Enviá únicamente ETH mediante la red Optimism (L2 de Ethereum). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+    }
+  ]
+}
+```
+
+> **Agregar un token/red:** sumá el objeto a `tokens[].networks` en `payment_info.json` (con `address`, `qr` y `warning`) y dejá la imagen QR en `static/assets/`. El frontend arma el selector y el bloque de wallet solo. Para que además aparezca su conversión, el símbolo debe existir en el backend (`CRYPTO_IDS` o `STABLECOINS`).
 
 **Ejemplo de respuesta de `/api/rates?amount=2500`:**
 

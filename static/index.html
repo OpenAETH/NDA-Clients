@@ -86,18 +86,24 @@
   .discount-msg.ok  { color: var(--ok); }
   .discount-msg.err { color: var(--err); }
 
-  .total-display { background: var(--brand); color: white; border-radius: 8px; padding: 1rem 1.25rem; display: flex; justify-content: space-between; align-items: center; }
-  .total-display .td-label { font-size: 12px; opacity: 0.7; }
-  .total-display .td-base { font-size: 12px; opacity: 0.6; font-weight: 500; }
-  .total-display .td-base.hidden { display: none; }
-  .total-display .td-amount { font-size: 22px; font-weight: 700; color: #ff8fa3; }
-  .total-display .td-amount.flip { animation: td-flip 180ms ease; }
+  /* Resumen de pago: valor del proyecto vs. pago de hoy */
+  .pay-summary { background: var(--brand); color: white; border-radius: 8px; padding: 1rem 1.25rem; }
+  .pay-summary .ps-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .pay-summary .ps-project { padding-bottom: 0.7rem; margin-bottom: 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.15); }
+  .pay-summary .ps-project .ps-value { font-size: 16px; font-weight: 600; }
+  .pay-summary .ps-label { font-size: 12px; opacity: 0.7; }
+  .pay-summary .ps-sub { font-size: 11px; opacity: 0.55; margin-top: 2px; }
+  .td-label { font-size: 12px; opacity: 0.7; }
+  .td-base { font-size: 12px; opacity: 0.6; font-weight: 500; }
+  .td-base.hidden { display: none; }
+  .td-amount { font-size: 22px; font-weight: 700; color: #ff8fa3; }
+  .td-amount.flip { animation: td-flip 180ms ease; }
   @keyframes td-flip {
     0%   { opacity: 0; transform: translateY(-4px); }
     100% { opacity: 1; transform: translateY(0); }
   }
-  .total-display .td-rate { font-size: 11px; opacity: 0.7; margin-top: 2px; font-family: monospace; }
-  .total-display .td-age { font-size: 10px; opacity: 0.55; margin-top: 2px; }
+  .td-rate { font-size: 11px; opacity: 0.7; margin-top: 2px; font-family: monospace; }
+  .td-age { font-size: 10px; opacity: 0.55; margin-top: 2px; }
 
   .crypto-token-select { margin-bottom: 0.75rem; }
   .crypto-token-select label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
@@ -129,8 +135,11 @@
   .pm-detail { background: #f5f6fa; border-radius: 7px; padding: 0.75rem 1rem; }
   .pm-detail .pm-field { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); }
   .pm-detail .pm-field:last-child { border-bottom: none; }
-  .pm-detail .pm-field span:first-child { color: var(--muted); }
-  .pm-detail .pm-field span:last-child { font-weight: 500; font-family: monospace; font-size: 12px; }
+  .pm-detail .pm-field .pm-flabel { color: var(--muted); }
+  .pm-detail .pm-field .pm-fval { display: flex; align-items: center; gap: 8px; font-weight: 500; font-family: monospace; font-size: 12px; text-align: right; }
+  .pm-detail .pm-field .pm-copy { flex-shrink: 0; padding: 2px 10px; border: 1px solid var(--brand); background: white; color: var(--brand); border-radius: 20px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; cursor: pointer; transition: all 0.15s; }
+  .pm-detail .pm-field .pm-copy:hover { background: var(--brand); color: white; }
+  .pm-detail .pm-field .pm-copy.copied { background: var(--ok); border-color: var(--ok); color: white; }
 
   /* NDA */
   .nda-scroll { background: #fafafa; border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.5rem; max-height: 320px; overflow-y: auto; font-size: 13px; line-height: 1.7; color: #333; }
@@ -242,9 +251,12 @@
     <div id="product-error" class="alert warn" style="display:none;">Por favor seleccioná un producto.</div>
   </div>
 
-  <!-- STEP 3 -->
+  <!-- STEP 3 — Activación del proyecto -->
   <div class="card">
-    <div class="card-title"><span class="step-badge">3</span> Modalidad y método de pago</div>
+    <div class="card-title"><span class="step-badge">3</span> Activación del proyecto</div>
+
+    <!-- 3.1 Modalidad de pago -->
+    <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);">Modalidad de pago</div>
     <div class="payment-modes">
       <div class="payment-mode selected" id="mode-hitos" onclick="selectPaymentMode('hitos')">
         <div class="pm-title">Por hitos</div>
@@ -268,17 +280,11 @@
       </div>
       <div id="discount-msg" class="discount-msg" style="display:none;"></div>
     </div>
+
     <div class="divider"></div>
-    <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);">Método de pago preferido</div>
-    <div class="total-display">
-      <div><div class="td-label">TOTAL A PAGAR</div><div class="td-label" id="total-mode-label">Pago por hitos</div></div>
-      <div style="text-align:right;">
-        <div class="td-base" id="total-base">USD 0.00</div>
-        <div class="td-amount" id="total-display">USD 0.00</div>
-        <div class="td-rate" id="total-rate"></div>
-        <div class="td-age" id="total-age"></div>
-      </div>
-    </div>
+
+    <!-- 3.2 Método de pago -->
+    <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);">Método de pago</div>
     <div class="pm-tabs" id="pm-tabs"></div>
     <div class="crypto-token-select" id="crypto-token-select" style="display:none;">
       <label>¿Con qué token vas a pagar?</label>
@@ -290,12 +296,29 @@
       <div class="crypto-wallet" id="crypto-wallet" style="display:none;"></div>
     </div>
     <div id="pm-panels"></div>
-    <div class="info-text" style="margin-top:0.75rem;">El pago inicial activa el proyecto. Adjuntá el comprobante en el siguiente paso.</div>
-  </div>
 
-  <!-- STEP 4 -->
-  <div class="card">
-    <div class="card-title"><span class="step-badge">4</span> Comprobante de pago inicial</div>
+    <!-- 3.3 Resumen de pago: valor del proyecto vs. pago de hoy -->
+    <div class="pay-summary" style="margin-top:1rem;">
+      <div class="ps-row ps-project">
+        <div class="ps-label">Valor del proyecto</div>
+        <div class="ps-value" id="ps-project-value">USD 0.00</div>
+      </div>
+      <div class="ps-row">
+        <div>
+          <div class="td-label">PAGO DE HOY</div>
+          <div class="ps-sub" id="total-mode-label">Pago por hitos</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="td-base" id="total-base">USD 0.00</div>
+          <div class="td-amount" id="total-display">USD 0.00</div>
+          <div class="td-rate" id="total-rate"></div>
+          <div class="td-age" id="total-age"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3.4 Comprobante de pago (opcional) -->
+    <div style="font-size:13px;font-weight:500;margin:1.25rem 0 0.5rem;color:var(--brand);">Comprobante de pago <span style="font-weight:400;color:var(--muted);">(opcional)</span></div>
     <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
          ondragover="event.preventDefault();this.classList.add('dragover')"
          ondragleave="this.classList.remove('dragover')"
@@ -306,12 +329,17 @@
       <input type="file" id="file-input" style="display:none" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(event)">
     </div>
     <div id="upload-preview"></div>
-    <div class="info-text">Podés adjuntarlo ahora o enviarlo por email después de firmar.</div>
+    <div class="info-text">Podés adjuntarlo ahora o enviarlo por email después de firmar. El pago inicial activa el proyecto.</div>
+
+    <div class="divider"></div>
+    <button class="btn-primary" style="margin-bottom:0;" onclick="document.getElementById('step-nda').scrollIntoView({behavior:'smooth',block:'start'})">
+      Continuar a la firma del NDA &#8595;
+    </button>
   </div>
 
-  <!-- STEP 5 -->
-  <div class="card">
-    <div class="card-title"><span class="step-badge">5</span> Leer y aceptar el NDA</div>
+  <!-- STEP 4 -->
+  <div class="card" id="step-nda">
+    <div class="card-title"><span class="step-badge">4</span> Leer y aceptar el NDA</div>
     <div class="nda-scroll">
       <h3>NON-DISCLOSURE &amp; ENGAGEMENT AGREEMENT</h3>
       <p style="margin-bottom:0.75rem;font-size:12px;text-align:center;color:#666;">
@@ -334,9 +362,9 @@
     </div>
   </div>
 
-  <!-- STEP 6 -->
+  <!-- STEP 5 -->
   <div class="card">
-    <div class="card-title"><span class="step-badge">6</span> Firma digital</div>
+    <div class="card-title"><span class="step-badge">5</span> Firma digital</div>
     <div class="sig-modes">
       <button class="sig-mode-btn active" id="btn-canvas" onclick="switchSigMode('canvas')">Firma a mano</button>
       <button class="sig-mode-btn" id="btn-type" onclick="switchSigMode('type')">Firma escrita</button>
@@ -356,9 +384,9 @@
     <div id="sig-error" class="alert warn" style="display:none;">Por favor agregá tu firma.</div>
   </div>
 
-  <!-- STEP 7 -->
+  <!-- STEP 6 -->
   <div class="card">
-    <div class="card-title"><span class="step-badge">7</span> Aceptar y enviar</div>
+    <div class="card-title"><span class="step-badge">6</span> Aceptar y enviar</div>
     <div class="agree-row">
       <input type="checkbox" id="agree-nda">
       <label for="agree-nda">He leído y acepto el Acuerdo de Confidencialidad y las condiciones de pago indicadas arriba.</label>
@@ -628,9 +656,19 @@ function renderTotalDisplay() {
   }
 }
 
+// Valor total del proyecto (precio base), siempre en USD. Independiente de
+// la modalidad, el descuento y el método de pago elegidos.
+function renderProjectValue() {
+  const el = document.getElementById('ps-project-value');
+  if (!el) return;
+  const base = selectedProd ? effectiveBase() : null;
+  el.textContent = base ? fmtCurrency('USD', base) : 'A cotizar';
+}
+
 function updateMilestones() {
   const tbody = document.getElementById('milestone-body');
   tbody.innerHTML = '';
+  renderProjectValue();
   if (!selectedProd) {
     currentTotalUSD = 0; totalIsQuote = false; rateConversions = null;
     renderTotalDisplay();
@@ -785,9 +823,18 @@ function renderPaymentMethods() {
     const isCrypto = (m.currency || '') === 'CRYPTO';
     if (isCrypto) cryptoTokens = m.tokens || [];
 
+    // Campos cuyo valor conviene copiar (Alias, CVU, CBU, IBAN, cuentas…).
+    // Se les añade un botón "Copiar"; el resto se muestra como texto plano.
+    const isCopyable = label => /alias|cvu|cbu|iban|account|routing|cuenta|wallet/i.test(label);
     const rows = (m.fields || [])
       .filter(f => f.value)   // ocultar campos sin valor (ej. wallets vacías)
-      .map(f => `<div class="pm-field"><span>${esc(f.label)}</span><span>${esc(f.value)}</span></div>`)
+      .map(f => {
+        const copyBtn = isCopyable(f.label)
+          ? `<button type="button" class="pm-copy" data-copy="${esc(f.value)}">Copiar</button>`
+          : '';
+        return `<div class="pm-field"><span class="pm-flabel">${esc(f.label)}</span>` +
+               `<span class="pm-fval"><span>${esc(f.value)}</span>${copyBtn}</span></div>`;
+      })
       .join('');
     const notes = (m.notes || [])
       .map(n => `<div class="info-text" style="margin-top:6px;">${esc(n)}</div>`)
@@ -801,6 +848,13 @@ function renderPaymentMethods() {
     panel.innerHTML = (rows ? `<div class="pm-detail">${rows}</div>` : empty) + notes;
     panels.appendChild(panel);
   });
+
+  // Botones "Copiar" de los campos fiat (Alias, CVU, CBU, IBAN…). Delegado
+  // sobre el contenedor porque los paneles se regeneran dinámicamente.
+  panels.onclick = e => {
+    const btn = e.target.closest('.pm-copy');
+    if (btn) copyText(btn.dataset.copy, btn);
+  };
 
   selectedPayKey = PAYMENT_METHODS[0].key;
   // Ya puede haber un total calculado antes de cargar los métodos: refrescar.
@@ -907,24 +961,26 @@ function renderCryptoWallet() {
     ${net.warning ? `<div class="cw-warning">⚠️ <span>${esc(net.warning)}</span></div>` : ''}
   `;
   const btn = document.getElementById('cw-copy');
-  if (btn) btn.onclick = () => copyWalletAddress(net.address, btn);
+  if (btn) btn.onclick = () => copyText(net.address, btn);
 }
 
-async function copyWalletAddress(addr, btn) {
+// Copia `text` al portapapeles y da feedback visual en `btn`. Reutilizado por
+// la wallet cripto y los campos fiat copiables (Alias, CVU, CBU, IBAN…).
+async function copyText(text, btn) {
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(addr);
+      await navigator.clipboard.writeText(text);
     } else {
       // Fallback para contextos sin Clipboard API (http, navegadores viejos).
       const ta = document.createElement('textarea');
-      ta.value = addr; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
       document.body.appendChild(ta); ta.select();
       document.execCommand('copy'); document.body.removeChild(ta);
     }
     btn.textContent = '✓ Copiado'; btn.classList.add('copied');
     setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 1800);
   } catch (err) {
-    console.error('[Wallet] Copy failed:', err);
+    console.error('[Copy] Failed:', err);
     btn.textContent = 'Error';
     setTimeout(() => { btn.textContent = 'Copiar'; }, 1800);
   }
