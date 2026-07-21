@@ -60,7 +60,7 @@ app/
 │   ├── engagements.py   # Firma NDA, generación PDF, emails
 │   └── payments.py      # Upload comprobantes, verificación hitos
 ├── services/
-│   ├── pdf_service.py   # Generación NDA en PDF con ReportLab
+│   ├── pdf_service.py   # Generación NDA en PDF con ReportLab (detalles del acuerdo + medio de pago)
 │   ├── email_service.py # Envío de emails via Resend
 │   ├── storage_service.py # Upload/presigned URLs en R2
 │   └── rates_service.py # Cotizaciones fiat/cripto con caché (5 min) + fallback
@@ -70,7 +70,7 @@ data/
 ├── payment_info.json    # Datos de pago (versionado, editable)
 └── discount_codes.json  # Códigos de descuento (versionado, editable)
 static/
-├── index.html           # Frontend embebido
+├── index.html           # Frontend embebido (formulario de 5 pasos)
 └── assets/              # Imágenes QR de las wallets cripto (por red)
 ```
 
@@ -80,8 +80,20 @@ static/
 
 ## Flujo principal
 
+El formulario (`static/index.html`) tiene **5 pasos**:
+
+1. **Datos del cliente**
+2. **Selección de producto / servicio**
+3. **Activación del proyecto** — modalidad de pago (hitos/anticipado), método de pago (ARS/USD/EUR/cripto) con datos copiables, resumen de pago (valor del proyecto vs. pago de hoy) y **carga del comprobante**.
+4. **Firma del NDA** — el documento incluye **todos los detalles del acuerdo** (producto, montos por hito con su "cuándo", método y medio de pago, token/red de cripto) + la firma digital, integrados en un mismo paso.
+5. **Aceptar y enviar**
+
+> **El comprobante es obligatorio y habilita la firma:** el botón "Continuar a la firma del NDA" queda deshabilitado hasta cargar un archivo válido (validación de tipo/tamaño en el cliente, espejo del backend). La subida real al backend ocurre en el envío, con el `engagement_id` devuelto.
+
 ```
-Cliente llena formulario
+Cliente llena formulario (pasos 1–3, incluye comprobante)
+        ↓
+Firma el NDA (paso 4, con todos los detalles del acuerdo)
         ↓
 POST /api/engagements
         ↓
@@ -91,8 +103,10 @@ POST /api/engagements
   │    código de descuento (re-validado)   │
   │ 3. Upsert cliente (JSON, file-lock)    │
   │ 4. Crea engagement + pagos (JSON)      │
+  │    (guarda payment_details elegido)    │
   │ 5. Registra la venta en Mongo (opcional)│
-  │ 6. Genera PDF del NDA                  │
+  │ 6. Genera PDF del NDA (con detalles     │
+  │    del acuerdo + medio de pago)        │
   │ 7. Envía PDF al cliente (email)        │
   │ 8. Notifica al proveedor               │
   │ 9. Sube PDF a Cloudflare R2            │
@@ -198,6 +212,24 @@ Detalle completo en [`DEPLOY.md`](DEPLOY.md).
 | PATCH | `/api/engagements/{id}/status` | Actualizar estado (admin) |
 | GET | `/api/engagements/{id}/nda/download` | URL presignada del PDF (admin) |
 
+`POST /api/engagements` acepta un campo opcional **`payment_details`** con el método/medio de pago elegido por el cliente (que el backend no conoce de otro modo). Se guarda en el engagement y se incrusta en el PDF firmado bajo "Medio de pago acordado":
+
+```json
+{
+  "payment_details": {
+    "method_key": "crypto",
+    "method_label": "Cripto",
+    "currency": "CRYPTO",
+    "token": "USDT",
+    "network": "Tron (TRC20)",
+    "address": "THH5PJ…",
+    "fields": null
+  }
+}
+```
+
+Para métodos fiat, `token/network/address` van en `null` y los datos de la transferencia (Alias, CVU, IBAN…) llegan en `fields: [{label, value}]`.
+
 ### Pagos
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -252,9 +284,11 @@ El total del formulario se calcula **siempre en USD** (moneda base). La conversi
    - **Cripto (BTC, ETH)** → **Coinbase** como primario y **CoinGecko** como fallback (Coinbase es estable y evita el `429` del tier gratuito de CoinGecko).
    - **USDT/USDC** → stablecoins ancladas 1:1 al USD; no se consultan.
 3. Las tasas se **cachean 5 min** en memoria. Ante fallo de un proveedor se reutiliza el último valor válido (y se marca `stale`), de modo que el pago nunca se bloquea por FX.
-4. El frontend actualiza `div.total-display` en vivo: importe convertido, referencia en USD, la cotización usada (`1 BTC = 63.100,13 USD`) y la antigüedad del dato (`Cotización actualizada hace 2 min`).
+4. El frontend actualiza el **resumen de pago** (`div.pay-summary`) en vivo: valor del proyecto, pago de hoy convertido, referencia en USD, la cotización usada (`1 BTC = 63.100,13 USD`) y la antigüedad del dato (`Cotización actualizada hace 2 min`).
 
-**Método cripto:** al elegirlo, el formulario pide **qué token** se usará. Los tokens se derivan dinámicamente de `payment_info.json` (no hardcodeados) y `total-display` muestra solo el activo seleccionado.
+**Pago de hoy vs. total:** el resumen separa el **valor del proyecto** (total, siempre en USD) del **pago de hoy** (lo que se abona al firmar). En modo **hitos**, el pago de hoy es el **primer hito** (p. ej. 40% "Al firmar"), y el NDA detalla los hitos restantes con su momento (30% "Al avanzar", 30% "Al finalizar") sin ambigüedad. En modo **anticipado**, el pago de hoy es el total. La conversión a la moneda elegida se escala linealmente desde la conversión cacheada del total (la conversión es `monto × tasa`), sin re-consultar el API.
+
+**Método cripto:** al elegirlo, el formulario pide **qué token** se usará. Los tokens se derivan dinámicamente de `payment_info.json` (no hardcodeados) y el resumen de pago muestra solo el activo seleccionado.
 
 ### Wallets cripto: token → red → QR + dirección
 
