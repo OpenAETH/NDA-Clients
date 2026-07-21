@@ -11,6 +11,9 @@ from reportlab.lib import colors
 
 W, H = A4
 MARGIN = 18 * mm
+
+# Momento de cada hito, sin ambigüedad. Índice = número de hito - 1.
+MILESTONE_WHEN = ["Al firmar", "Al avanzar", "Al finalizar"]
 BRAND_DARK = colors.HexColor("#1A1A2E")
 BRAND_ACCENT = colors.HexColor("#E94560")
 BRAND_MID = colors.HexColor("#0F3460")
@@ -178,8 +181,9 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
     c.setFont("Helvetica-Bold", 8)
     c.setFillColor(WHITE)
     c.drawString(MARGIN + 3*mm, y - 4.5*mm, "Hito")
-    c.drawString(MARGIN + 70*mm, y - 4.5*mm, "%")
-    c.drawString(MARGIN + 90*mm, y - 4.5*mm, "Monto (USD)")
+    c.drawString(MARGIN + 60*mm, y - 4.5*mm, "%")
+    c.drawString(MARGIN + 74*mm, y - 4.5*mm, "Cuándo")
+    c.drawString(MARGIN + 118*mm, y - 4.5*mm, "Monto (USD)")
     y -= 6*mm
 
     for i, m in enumerate(milestones):
@@ -190,8 +194,9 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
         c.setFont("Helvetica", 8)
         c.setFillColor(BRAND_DARK)
         c.drawString(MARGIN + 3*mm, y - 4*mm, m["label"])
-        c.drawString(MARGIN + 70*mm, y - 4*mm, f"{m['pct']:.0f}%")
-        c.drawString(MARGIN + 90*mm, y - 4*mm, f"${amt:,.2f}" if total_amount else "A cotizar")
+        c.drawString(MARGIN + 60*mm, y - 4*mm, f"{m['pct']:.0f}%")
+        c.drawString(MARGIN + 74*mm, y - 4*mm, MILESTONE_WHEN[i] if i < len(MILESTONE_WHEN) else "")
+        c.drawString(MARGIN + 118*mm, y - 4*mm, f"${amt:,.2f}" if total_amount else "A cotizar")
         y -= 5.5*mm
 
     # Total row
@@ -202,7 +207,7 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
     c.drawString(MARGIN + 3*mm, y - 4.5*mm, "TOTAL")
     c.setFillColor(BRAND_ACCENT)
     total_str = f"${total_amount:,.2f} USD" if total_amount else "A cotizar"
-    c.drawString(MARGIN + 90*mm, y - 4.5*mm, total_str)
+    c.drawString(MARGIN + 118*mm, y - 4.5*mm, total_str)
     y -= 10*mm
 
     # ── Medio de pago acordado ───────────────────────────────────

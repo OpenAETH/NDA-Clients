@@ -541,11 +541,37 @@ function selectPaymentMode(mode) {
   paymentMode = mode;
   document.getElementById('mode-hitos').classList.toggle('selected', mode === 'hitos');
   document.getElementById('mode-anticipado').classList.toggle('selected', mode === 'anticipado');
-  document.getElementById('total-mode-label').textContent = mode === 'hitos' ? 'Pago por hitos' : 'Pago único anticipado';
-  updateMilestones();
+  updateMilestones();   // recalcula total y refresca el sublabel del pago de hoy
+}
+
+// Sublabel del "pago de hoy": en hitos, el primer hito y su % ("Al firmar");
+// en anticipado, el pago único.
+function updateTodayLabel() {
+  const el = document.getElementById('total-mode-label');
+  if (!el) return;
+  if (paymentMode === 'anticipado') { el.textContent = 'Pago único anticipado'; return; }
+  const first = ((selectedProd && selectedProd.milestones) || [])[0];
+  el.textContent = first
+    ? `Hito 1 — ${first.label} (${first.pct}%) · Al firmar`
+    : 'Primer hito — Al firmar';
 }
 
 const fmtUSD = n => `$${Math.round(n).toLocaleString()}`;
+
+// Momento de cada hito, sin ambigüedad. Índice = número de hito - 1.
+const MILESTONE_WHEN = ['Al firmar', 'Al avanzar', 'Al finalizar'];
+
+// Monto que se paga HOY, en USD (moneda operativa). En modo hitos es el
+// primer hito (p. ej. 40% al firmar); en anticipado, el total. 0 si no hay
+// total operativo todavía.
+function todayAmountUSD() {
+  if (totalIsQuote || !currentTotalUSD) return 0;
+  if (paymentMode === 'hitos') {
+    const first = ((selectedProd && selectedProd.milestones) || [])[0];
+    if (first) return Math.round(currentTotalUSD * first.pct / 100);
+  }
+  return currentTotalUSD;
+}
 
 // ═══════════════════════════════════════════════════════
 // CURRENCY CONVERSION (solo visualización — el total operativo es USD)
@@ -635,14 +661,18 @@ function renderTotalDisplay() {
   const age  = document.getElementById('total-age');
   rate.textContent = ''; age.textContent = '';
   base.classList.add('hidden');
+  updateTodayLabel();
 
   if (totalIsQuote) { setAmount(el, 'A cotizar'); return; }
 
   const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
   const currency = method ? (method.currency || 'USD') : 'USD';
 
+  // El "pago de hoy" es el primer hito en modo hitos, o el total en anticipado.
+  const todayUSD = todayAmountUSD();
+
   // Sin conversiones (aún cargando o proveedor caído): mostrar USD base.
-  if (!rateConversions) { setAmount(el, fmtCurrency('USD', currentTotalUSD)); return; }
+  if (!rateConversions) { setAmount(el, fmtCurrency('USD', todayUSD)); return; }
 
   // Símbolo a mostrar: en cripto, el token elegido; si no, la moneda fiat.
   const code = currency === 'CRYPTO' ? selectedToken : currency;
@@ -653,14 +683,19 @@ function renderTotalDisplay() {
     return;
   }
 
-  const value = conversionFor(code);
+  // Las conversiones se cachean para currentTotalUSD; como la conversión es
+  // lineal (monto × tasa), escalamos al monto de hoy sin re-consultar el API.
+  const totalConv = conversionFor(code);
+  const value = (totalConv != null && currentTotalUSD)
+    ? totalConv * todayUSD / currentTotalUSD
+    : null;
   const shown = value != null ? code : 'USD';
   setAmount(el, value != null ? fmtCurrency(code, value)
-                              : fmtCurrency('USD', currentTotalUSD));
+                              : fmtCurrency('USD', todayUSD));
 
   // Referencia siempre en la moneda base (USD), salvo que ya estemos en USD.
   if (shown !== 'USD') {
-    base.textContent = fmtCurrency('USD', currentTotalUSD);
+    base.textContent = fmtCurrency('USD', todayUSD);
     base.classList.remove('hidden');
   }
 
@@ -716,7 +751,7 @@ function updateMilestones() {
       const amt = Math.round(total * m.pct / 100);
       const tr = document.createElement('tr');
       if (i === 0) tr.style.background = '#fff5f7';
-      tr.innerHTML = `<td>Hito ${i+1} — ${m.label}</td><td>${m.pct}%</td><td><strong>${fmtUSD(amt)}</strong></td><td>${['Al firmar','Al avanzar','Al finalizar'][i] || ''}</td>`;
+      tr.innerHTML = `<td>Hito ${i+1} — ${m.label}</td><td>${m.pct}%</td><td><strong>${fmtUSD(amt)}</strong></td><td>${MILESTONE_WHEN[i] || ''}</td>`;
       tbody.appendChild(tr);
     });
     const tr = document.createElement('tr');
@@ -1017,15 +1052,21 @@ function updateNdaFills() {
 }
 
 // Etiqueta legible del pago de hoy en la moneda elegida (incluye token/red de
-// cripto). Refleja exactamente lo que ve el cliente en el resumen de pago.
+// cripto). Refleja exactamente lo que ve el cliente en el resumen de pago:
+// el primer hito en modo hitos, o el total en anticipado.
 function todayPaymentLabel() {
   if (totalIsQuote) return 'A cotizar';
+  const todayUSD = todayAmountUSD();
   const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
   const currency = method ? (method.currency || 'USD') : 'USD';
   const code     = currency === 'CRYPTO' ? selectedToken : currency;
-  const value    = code ? conversionFor(code) : undefined;
+  // Escala lineal de la conversión cacheada (para el total) al monto de hoy.
+  const totalConv = code ? conversionFor(code) : undefined;
+  const value = (totalConv != null && currentTotalUSD)
+    ? totalConv * todayUSD / currentTotalUSD
+    : undefined;
   if (value != null) return fmtCurrency(code, value);
-  return fmtCurrency('USD', currentTotalUSD);   // sin conversión: USD base
+  return fmtCurrency('USD', todayUSD);   // sin conversión: USD base
 }
 
 // Reúne TODOS los detalles del acuerdo para incrustarlos en el documento a
@@ -1052,11 +1093,14 @@ function collectAgreementDetails() {
   }
   rows.push(['Total acordado (USD)', totalIsQuote ? 'A cotizar' : fmtCurrency('USD', currentTotalUSD)]);
 
-  // Detalle de hitos (montos en USD, moneda operativa del acuerdo).
+  // Detalle de hitos (montos en USD, moneda operativa del acuerdo). Se indica
+  // el momento de cada uno ("Al firmar", "Al avanzar", "Al finalizar") para
+  // eliminar cualquier ambigüedad sobre cuándo se paga cada parte.
   if (paymentMode === 'hitos' && selectedProd && !totalIsQuote) {
     (selectedProd.milestones || []).forEach((m, i) => {
-      const amt = Math.round(currentTotalUSD * m.pct / 100);
-      rows.push([`Hito ${i + 1} — ${m.label} (${m.pct}%)`, fmtUSD(amt) + ' USD']);
+      const amt  = Math.round(currentTotalUSD * m.pct / 100);
+      const when = MILESTONE_WHEN[i] || '';
+      rows.push([`Hito ${i + 1} — ${m.label} (${m.pct}%) · ${when}`, fmtUSD(amt) + ' USD']);
     });
   }
 
@@ -1077,7 +1121,12 @@ function collectAgreementDetails() {
     }
   }
 
-  rows.push(['Pago de hoy', todayPaymentLabel()]);
+  // Pago de hoy: en hitos, el primer hito (al firmar); en anticipado, el total.
+  const first = ((selectedProd && selectedProd.milestones) || [])[0];
+  const todayLabel = paymentMode === 'hitos'
+    ? (first ? `Pago de hoy — Hito 1 (${first.pct}%, al firmar)` : 'Pago de hoy (al firmar)')
+    : 'Pago de hoy (pago único, al firmar)';
+  rows.push([todayLabel, todayPaymentLabel()]);
   return rows;
 }
 
