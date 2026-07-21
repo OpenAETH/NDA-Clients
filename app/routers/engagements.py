@@ -96,6 +96,7 @@ async def create_engagement(payload: EngagementCreate, request: Request):
         "final_price":         final_price,
         "milestones_snapshot": milestones,
         "custom_description":  payload.custom_description,
+        "payment_details":     payload.payment_details.model_dump() if payload.payment_details else None,
         "signature_type":      payload.signature_type,
         "signature_data":      payload.signature_data,
         "ip_address":          ip,
@@ -171,6 +172,8 @@ async def create_engagement(payload: EngagementCreate, request: Request):
             signature_data=payload.signature_data,
             engagement_id=engagement_id,
             signed_at=signed_at,
+            custom_description=payload.custom_description,
+            payment_details=payload.payment_details.model_dump() if payload.payment_details else None,
         )
 
         # ── Send emails ───────────────────────────────────────────

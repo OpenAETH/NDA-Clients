@@ -57,6 +57,24 @@ class SignatureType(str, Enum):
     typed = "typed"
 
 
+class PaymentFieldDetail(BaseModel):
+    label: str
+    value: str
+
+
+class PaymentDetails(BaseModel):
+    """Método/medio de pago elegido por el cliente (para el PDF y el registro)."""
+    method_key: Optional[str] = None
+    method_label: Optional[str] = None
+    currency: Optional[str] = None
+    # Cripto:
+    token: Optional[str] = None
+    network: Optional[str] = None
+    address: Optional[str] = None
+    # Fiat: campos de la transferencia (Alias, CVU, IBAN…).
+    fields: Optional[List[PaymentFieldDetail]] = None
+
+
 class EngagementCreate(BaseModel):
     client: ClientData
     product_code: str
@@ -66,6 +84,7 @@ class EngagementCreate(BaseModel):
     discount_code: Optional[str] = None            # Optional discount code
     signature_type: SignatureType
     signature_data: str                            # base64 PNG
+    payment_details: Optional[PaymentDetails] = None   # método/medio elegido
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
 

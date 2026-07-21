@@ -37,19 +37,23 @@ def generate_nda_pdf(
     signature_data: str,        # base64 PNG
     engagement_id: str,
     signed_at: Optional[datetime] = None,
+    custom_description: Optional[str] = None,
+    payment_details: Optional[dict] = None,
 ) -> bytes:
     buf = io.BytesIO()
     c = rl_canvas.Canvas(buf, pagesize=A4)
     _draw_page(c, client_name, client_email, client_company, client_country,
                product_name, payment_mode, total_amount, discount_pct,
-               milestones, signature_data, engagement_id, signed_at)
+               milestones, signature_data, engagement_id, signed_at,
+               custom_description, payment_details)
     c.save()
     return buf.getvalue()
 
 
 def _draw_page(c, client_name, client_email, client_company, client_country,
                product_name, payment_mode, total_amount, discount_pct,
-               milestones, signature_data, engagement_id, signed_at):
+               milestones, signature_data, engagement_id, signed_at,
+               custom_description=None, payment_details=None):
 
     # ── Header bar ───────────────────────────────────────────────
     c.setFillColor(BRAND_DARK)
@@ -70,10 +74,6 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
     y = H - 40*mm
 
     # ── Info block ───────────────────────────────────────────────
-    box_h = 50*mm
-    c.setFillColor(GRAY_LIGHT)
-    c.roundRect(MARGIN, y - box_h, W - 2*MARGIN, box_h, 3*mm, fill=1, stroke=0)
-
     today = (signed_at or datetime.utcnow()).strftime("%d de %B de %Y")
     mode_label = "Pago por hitos (3 cuotas)" if payment_mode == "hitos" else "Pago único anticipado"
     amount_str = f"${total_amount:,.2f}" if total_amount else "A cotizar"
@@ -84,20 +84,28 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
         ("Email",                client_email),
         ("País / Jurisdicción",  client_country or "N/D"),
         ("Producto contratado",  product_name),
+    ]
+    if custom_description:
+        fields.append(("Requerimiento", custom_description))
+    fields += [
         ("Modalidad de pago",    mode_label),
         ("Total acordado",       f"{amount_str} USD"),
         ("Referencia",           engagement_id[:16].upper()),
         ("Fecha de firma",       today),
     ]
 
-    fy = y - 8*mm
+    box_h = (len(fields) * 5.5 + 5) * mm
+    c.setFillColor(GRAY_LIGHT)
+    c.roundRect(MARGIN, y - box_h, W - 2*MARGIN, box_h, 3*mm, fill=1, stroke=0)
+
+    fy = y - 7*mm
     for label, val in fields:
         c.setFont("Helvetica-Bold", 8)
         c.setFillColor(BRAND_MID)
         c.drawString(MARGIN + 4*mm, fy, label + ":")
         c.setFont("Helvetica", 8)
         c.setFillColor(BRAND_DARK)
-        c.drawString(MARGIN + 52*mm, fy, val[:70])
+        c.drawString(MARGIN + 52*mm, fy, str(val)[:70])
         fy -= 5.5*mm
 
     y = y - box_h - 8*mm
@@ -197,6 +205,35 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
     c.drawString(MARGIN + 90*mm, y - 4.5*mm, total_str)
     y -= 10*mm
 
+    # ── Medio de pago acordado ───────────────────────────────────
+    # Detalle del método/medio elegido por el cliente (fiat o cripto), para
+    # que el documento firmado contenga todos los datos del acuerdo.
+    pay_rows = _payment_rows(payment_mode, payment_details)
+    if pay_rows:
+        if y < 60*mm:
+            c.showPage()
+            y = H - MARGIN
+        c.setFont("Helvetica-Bold", 9)
+        c.setFillColor(BRAND_DARK)
+        c.drawString(MARGIN, y, "Medio de pago acordado")
+        y -= 6*mm
+        for label, val in pay_rows:
+            if y < 30*mm:
+                c.showPage()
+                y = H - MARGIN
+            c.setFont("Helvetica-Bold", 8)
+            c.setFillColor(BRAND_MID)
+            c.drawString(MARGIN + 2*mm, y, label + ":")
+            c.setFont("Helvetica", 8)
+            c.setFillColor(BRAND_DARK)
+            lines = _wrap(str(val), W - 2*MARGIN - 52*mm, "Helvetica", 8, c)
+            c.drawString(MARGIN + 52*mm, y, lines[0])
+            for line in lines[1:]:
+                y -= 4.5*mm
+                c.drawString(MARGIN + 52*mm, y, line)
+            y -= 5.5*mm
+        y -= 4*mm
+
     # ── Signature section ────────────────────────────────────────
     if y < 55*mm:
         c.showPage()
@@ -260,6 +297,34 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
     c.setFillColor(colors.HexColor("#666688"))
     c.drawCentredString(W/2, 4.5*mm,
         "Confidencial — Agraound Consulting / AETHERYON Systems — agraound.com")
+
+
+def _payment_rows(payment_mode, payment_details) -> list:
+    """Pares [etiqueta, valor] con el medio de pago elegido (fiat o cripto)."""
+    rows = []
+    rows.append((
+        "Modalidad",
+        "Pago por hitos (3 cuotas)" if payment_mode == "hitos" else "Pago único anticipado",
+    ))
+    if not payment_details:
+        return rows
+
+    pd = payment_details
+    if pd.get("method_label"):
+        rows.append(("Método", pd["method_label"]))
+
+    if (pd.get("currency") or "").upper() == "CRYPTO":
+        if pd.get("token"):
+            rows.append(("Token", pd["token"]))
+        if pd.get("network"):
+            rows.append(("Red", pd["network"]))
+        if pd.get("address"):
+            rows.append(("Dirección", pd["address"]))
+    else:
+        for f in (pd.get("fields") or []):
+            if f.get("value"):
+                rows.append((f.get("label", ""), f["value"]))
+    return rows
 
 
 def _wrap(text: str, max_w: float, font: str, size: float, c) -> list:

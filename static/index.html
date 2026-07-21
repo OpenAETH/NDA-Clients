@@ -146,6 +146,13 @@
   .nda-scroll h3 { font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 1rem; color: var(--brand); }
   .nda-scroll .clause { margin-bottom: 0.75rem; }
   .fill { background: #fff3cd; padding: 1px 4px; border-radius: 3px; font-style: italic; }
+  .nda-details { background: #fff; border: 1px solid var(--border); border-radius: 7px; padding: 0.85rem 1rem; margin: 0 0 1rem; }
+  .nda-details .ndx-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent2); margin-bottom: 0.5rem; }
+  .ndx-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .ndx-table td { padding: 5px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .ndx-table tr:last-child td { border-bottom: none; }
+  .ndx-table td.ndx-k { color: var(--muted); width: 42%; padding-right: 10px; }
+  .ndx-table td.ndx-v { font-weight: 500; color: var(--brand); }
 
   /* Signature */
   .sig-modes { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
@@ -317,8 +324,8 @@
       </div>
     </div>
 
-    <!-- 3.4 Comprobante de pago (opcional) -->
-    <div style="font-size:13px;font-weight:500;margin:1.25rem 0 0.5rem;color:var(--brand);">Comprobante de pago <span style="font-weight:400;color:var(--muted);">(opcional)</span></div>
+    <!-- 3.4 Comprobante de pago (obligatorio) -->
+    <div style="font-size:13px;font-weight:500;margin:1.25rem 0 0.5rem;color:var(--brand);">Comprobante de pago <span class="req">*</span></div>
     <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
          ondragover="event.preventDefault();this.classList.add('dragover')"
          ondragleave="this.classList.remove('dragover')"
@@ -329,17 +336,17 @@
       <input type="file" id="file-input" style="display:none" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(event)">
     </div>
     <div id="upload-preview"></div>
-    <div class="info-text">Podés adjuntarlo ahora o enviarlo por email después de firmar. El pago inicial activa el proyecto.</div>
+    <div class="info-text">Cargá el comprobante del pago inicial para habilitar la firma del NDA. El pago inicial activa el proyecto.</div>
 
     <div class="divider"></div>
-    <button class="btn-primary" style="margin-bottom:0;" onclick="document.getElementById('step-nda').scrollIntoView({behavior:'smooth',block:'start'})">
+    <button class="btn-primary" id="continue-nda-btn" style="margin-bottom:0;" disabled onclick="goToNda()">
       Continuar a la firma del NDA &#8595;
     </button>
   </div>
 
-  <!-- STEP 4 -->
+  <!-- STEP 4 — NDA (con todos los detalles) + Firma digital -->
   <div class="card" id="step-nda">
-    <div class="card-title"><span class="step-badge">4</span> Leer y aceptar el NDA</div>
+    <div class="card-title"><span class="step-badge">4</span> Firma del NDA</div>
     <div class="nda-scroll">
       <h3>NON-DISCLOSURE &amp; ENGAGEMENT AGREEMENT</h3>
       <p style="margin-bottom:0.75rem;font-size:12px;text-align:center;color:#666;">
@@ -347,24 +354,31 @@
         y <strong id="nda-client-fill" class="fill">[Nombre del Cliente]</strong> ("Cliente"),
         con fecha <strong id="nda-date-fill" class="fill">[Fecha]</strong>.
       </p>
-      <div class="clause"><strong>1. Objeto.</strong> Evaluación, desarrollo e implementación de sistemas de datos, APIs y/o código según la propuesta aceptada.</div>
+
+      <!-- Detalles del acuerdo (dinámicos) -->
+      <div class="nda-details">
+        <div class="ndx-title">Detalles del acuerdo</div>
+        <table class="ndx-table" id="nda-detail-table"><tbody></tbody></table>
+      </div>
+
+      <div class="clause"><strong>1. Objeto.</strong> Evaluación, desarrollo e implementación de sistemas de datos, APIs y/o código según la propuesta aceptada, correspondiente al producto/servicio detallado arriba.</div>
       <div class="clause"><strong>2. Información Confidencial.</strong> Incluye datasets, bases de código, infraestructura, credenciales e información de negocio compartida entre las partes.</div>
       <div class="clause"><strong>3. Obligaciones.</strong> Uso exclusivo para los fines del proyecto. Prohibida toda divulgación. Aplicar medidas razonables de protección.</div>
       <div class="clause"><strong>4. Acceso &amp; Seguridad.</strong> Acceso de solo lectura cuando sea posible. Sin evasión de seguridad. Las vulnerabilidades serán reportadas.</div>
       <div class="clause"><strong>5. Exclusiones.</strong> Información pública, conocimiento previo, desarrollo independiente o divulgación legal obligatoria.</div>
       <div class="clause"><strong>6. Vigencia.</strong> Válido por 2 años. La confidencialidad persiste tras la terminación del acuerdo.</div>
       <div class="clause"><strong>7. Manejo de Datos.</strong> Usados únicamente durante el proyecto. Eliminados bajo solicitud. Sin retención innecesaria.</div>
-      <div class="clause"><strong>8. Condiciones de Pago.</strong> 40% al firmar, 30% en hito intermedio, 30% en entrega final. El trabajo comienza después del pago inicial.</div>
+      <div class="clause"><strong>8. Condiciones de Pago.</strong> <span id="nda-pay-clause">Se aplican la modalidad, los montos y el método de pago detallados arriba.</span> El trabajo comienza después del pago inicial.</div>
       <div class="clause"><strong>9. Sin Transferencia de PI.</strong> No se transfieren derechos de propiedad intelectual salvo acuerdo escrito adicional.</div>
       <div class="clause"><strong>10. Limitación de Responsabilidad.</strong> Sin responsabilidad por daños indirectos o consecuentes.</div>
       <div class="clause"><strong>11. Ley Aplicable.</strong> <strong id="nda-juris-fill" class="fill">[Jurisdicción a definir]</strong>.</div>
       <div class="clause"><strong>12. Aceptación.</strong> Este acuerdo es válido mediante firma digital. La ejecución del pago inicial implica aceptación total.</div>
     </div>
-  </div>
 
-  <!-- STEP 5 -->
-  <div class="card">
-    <div class="card-title"><span class="step-badge">5</span> Firma digital</div>
+    <div class="divider"></div>
+
+    <!-- Firma digital (integrada en el mismo paso) -->
+    <div style="font-size:13px;font-weight:500;margin-bottom:0.75rem;color:var(--brand);">Firma digital</div>
     <div class="sig-modes">
       <button class="sig-mode-btn active" id="btn-canvas" onclick="switchSigMode('canvas')">Firma a mano</button>
       <button class="sig-mode-btn" id="btn-type" onclick="switchSigMode('type')">Firma escrita</button>
@@ -384,9 +398,9 @@
     <div id="sig-error" class="alert warn" style="display:none;">Por favor agregá tu firma.</div>
   </div>
 
-  <!-- STEP 6 -->
+  <!-- STEP 5 -->
   <div class="card">
-    <div class="card-title"><span class="step-badge">6</span> Aceptar y enviar</div>
+    <div class="card-title"><span class="step-badge">5</span> Aceptar y enviar</div>
     <div class="agree-row">
       <input type="checkbox" id="agree-nda">
       <label for="agree-nda">He leído y acepto el Acuerdo de Confidencialidad y las condiciones de pago indicadas arriba.</label>
@@ -654,6 +668,9 @@ function renderTotalDisplay() {
     rate.textContent = fmtRateLine(rateRatesUsed[code]);
     age.textContent  = fmtAge(rateAgeSeconds);
   }
+
+  // Mantener el detalle del NDA sincronizado con cualquier cambio de selección.
+  renderNdaDetails();
 }
 
 // Valor total del proyecto (precio base), siempre en USD. Independiente de
@@ -942,6 +959,7 @@ function selectNetwork(net) {
   selectedNetwork = net;
   renderCryptoNetworks();
   renderCryptoWallet();
+  renderNdaDetails();   // la red elegida forma parte del acuerdo
 }
 
 // Muestra QR, dirección copiable y advertencia de red de la red elegida.
@@ -998,6 +1016,115 @@ function updateNdaFills() {
   document.getElementById('nda-juris-fill').textContent  = country;
 }
 
+// Etiqueta legible del pago de hoy en la moneda elegida (incluye token/red de
+// cripto). Refleja exactamente lo que ve el cliente en el resumen de pago.
+function todayPaymentLabel() {
+  if (totalIsQuote) return 'A cotizar';
+  const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
+  const currency = method ? (method.currency || 'USD') : 'USD';
+  const code     = currency === 'CRYPTO' ? selectedToken : currency;
+  const value    = code ? conversionFor(code) : undefined;
+  if (value != null) return fmtCurrency(code, value);
+  return fmtCurrency('USD', currentTotalUSD);   // sin conversión: USD base
+}
+
+// Reúne TODOS los detalles del acuerdo para incrustarlos en el documento a
+// firmar: producto/servicio, modalidad, montos por hito, método y medio de
+// pago, token y red de cripto. Devuelve pares [etiqueta, valor].
+function collectAgreementDetails() {
+  const rows = [];
+  const prodName = selectedProd
+    ? (selectedProd.full_name ? `${selectedProd.name} — ${selectedProd.full_name}` : selectedProd.name)
+    : '—';
+  rows.push(['Producto / Servicio', prodName]);
+
+  const customDesc = document.getElementById('custom-desc').value.trim();
+  if (selectedProd && selectedProd.code === 'CUSTOM' && customDesc) {
+    rows.push(['Requerimiento', customDesc]);
+  }
+
+  const base = selectedProd ? effectiveBase() : null;
+  rows.push(['Valor del proyecto', base ? fmtCurrency('USD', base) : 'A cotizar']);
+  rows.push(['Modalidad de pago', paymentMode === 'hitos' ? 'Pago por hitos (3 cuotas)' : 'Pago único anticipado']);
+
+  if (appliedDiscount) {
+    rows.push(['Código de descuento', appliedDiscount.code]);
+  }
+  rows.push(['Total acordado (USD)', totalIsQuote ? 'A cotizar' : fmtCurrency('USD', currentTotalUSD)]);
+
+  // Detalle de hitos (montos en USD, moneda operativa del acuerdo).
+  if (paymentMode === 'hitos' && selectedProd && !totalIsQuote) {
+    (selectedProd.milestones || []).forEach((m, i) => {
+      const amt = Math.round(currentTotalUSD * m.pct / 100);
+      rows.push([`Hito ${i + 1} — ${m.label} (${m.pct}%)`, fmtUSD(amt) + ' USD']);
+    });
+  }
+
+  // Método y medio de pago elegido.
+  const method = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
+  if (method) {
+    rows.push(['Método de pago', method.label]);
+    const isCrypto = (method.currency || '') === 'CRYPTO';
+    if (isCrypto) {
+      if (selectedToken)   rows.push(['Token', selectedToken]);
+      if (selectedNetwork) {
+        rows.push(['Red', selectedNetwork.name]);
+        if (selectedNetwork.address) rows.push(['Dirección', selectedNetwork.address]);
+      }
+    } else {
+      // Datos de la transferencia fiat (Alias, CVU, IBAN, cuenta…).
+      (method.fields || []).filter(f => f.value).forEach(f => rows.push([f.label, f.value]));
+    }
+  }
+
+  rows.push(['Pago de hoy', todayPaymentLabel()]);
+  return rows;
+}
+
+// Estructura el método/medio de pago elegido para enviarlo al backend, que
+// no conoce la selección de método, token ni red del cliente. Se incrusta en
+// el PDF oficial firmado.
+function collectPaymentDetails() {
+  const method = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
+  if (!method) return null;
+  const isCrypto = (method.currency || '') === 'CRYPTO';
+  const out = {
+    method_key:   method.key,
+    method_label: method.label,
+    currency:     method.currency || 'USD',
+  };
+  if (isCrypto) {
+    out.token   = selectedToken || null;
+    out.network = selectedNetwork ? selectedNetwork.name : null;
+    out.address = selectedNetwork ? selectedNetwork.address : null;
+  } else {
+    out.fields = (method.fields || [])
+      .filter(f => f.value)
+      .map(f => ({ label: f.label, value: f.value }));
+  }
+  return out;
+}
+
+// Pinta la tabla de detalles del acuerdo dentro del NDA.
+function renderNdaDetails() {
+  const tbody = document.querySelector('#nda-detail-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = collectAgreementDetails()
+    .map(([k, v]) => `<tr><td class="ndx-k">${esc(k)}</td><td class="ndx-v">${esc(v)}</td></tr>`)
+    .join('');
+
+  // Cláusula 8: condiciones de pago concretas de este acuerdo.
+  const clause = document.getElementById('nda-pay-clause');
+  if (clause) {
+    const method = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
+    const modeTxt = paymentMode === 'hitos'
+      ? 'El pago se realiza por hitos según el detalle anterior (40% al firmar, 30% en hito intermedio, 30% en entrega final).'
+      : 'El pago se realiza de forma anticipada en un único desembolso según el detalle anterior.';
+    const methodTxt = method ? ` Medio de pago acordado: ${method.label}.` : '';
+    clause.textContent = modeTxt + methodTxt;
+  }
+}
+
 // ═══════════════════════════════════════════════════════
 // FILE UPLOAD
 // ═══════════════════════════════════════════════════════
@@ -1007,11 +1134,47 @@ function handleDrop(e) {
   document.getElementById('upload-zone').classList.remove('dragover');
   if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
 }
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;   // 10 MB (coincide con el backend)
+const ALLOWED_EXT = ['.pdf', '.jpg', '.jpeg', '.png'];
+
 function setFile(f) {
-  uploadedFile = f;
   const p = document.getElementById('upload-preview');
+  const ext = '.' + (f.name.split('.').pop() || '').toLowerCase();
+  if (!ALLOWED_EXT.includes(ext)) {
+    uploadedFile = null;
+    p.style.display = 'block';
+    p.style.color = 'var(--err)';
+    p.innerHTML = `&#10007; Formato no permitido. Aceptados: PDF, JPG, PNG.`;
+    updateNdaGate();
+    return;
+  }
+  if (f.size > MAX_UPLOAD_BYTES) {
+    uploadedFile = null;
+    p.style.display = 'block';
+    p.style.color = 'var(--err)';
+    p.innerHTML = `&#10007; El archivo supera los 10 MB.`;
+    updateNdaGate();
+    return;
+  }
+  uploadedFile = f;
   p.style.display = 'block';
-  p.innerHTML = `&#10003; <strong>${f.name}</strong> (${(f.size/1024).toFixed(0)} KB)`;
+  p.style.color = 'var(--ok)';
+  p.innerHTML = `&#10003; <strong>${esc(f.name)}</strong> (${(f.size/1024).toFixed(0)} KB)`;
+  updateNdaGate();
+}
+
+// El comprobante habilita la firma: sin archivo válido, el botón de continuar
+// queda deshabilitado.
+function updateNdaGate() {
+  const btn = document.getElementById('continue-nda-btn');
+  if (btn) btn.disabled = !uploadedFile;
+}
+
+// Refresca los detalles del acuerdo dentro del NDA y baja al paso de firma.
+function goToNda() {
+  if (!uploadedFile) return;
+  renderNdaDetails();
+  document.getElementById('step-nda').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1096,6 +1259,7 @@ async function submitForm() {
   } else {
     document.getElementById('sig-error').style.display = 'none';
   }
+  if (!uploadedFile) errs.push('Cargá el comprobante de pago (paso 3).');
   if (!document.getElementById('agree-nda').checked)     errs.push('Debés aceptar el NDA.');
   if (!document.getElementById('agree-payment').checked) errs.push('Debés confirmar las condiciones de pago.');
 
@@ -1130,6 +1294,7 @@ async function submitForm() {
       signature_type:      sigMode,
       signature_data:      sigData,
       user_agent:          navigator.userAgent,
+      payment_details:     collectPaymentDetails(),
     };
 
     const res = await fetch(`${API_BASE}/api/engagements`, {
@@ -1211,22 +1376,28 @@ function generateLocalPdf(sigDataUrl) {
   const company = document.getElementById('client-company').value || '';
   const country = document.getElementById('client-country').value || 'N/D';
   const today   = new Date().toLocaleDateString('es-AR',{year:'numeric',month:'long',day:'numeric'});
-  const prodName= selectedProd ? `${selectedProd.name} — ${selectedProd.full_name||''}` : 'N/D';
-  // El total operativo del PDF es SIEMPRE en USD, independientemente de la
-  // moneda que se esté visualizando en pantalla.
-  const totalAmt= totalIsQuote ? 'A cotizar' : fmtUSD(currentTotalUSD);
-  const modeLabel= paymentMode==='hitos'?'Pago por hitos':'Pago único anticipado';
 
-  doc.setFillColor(245,246,250); doc.roundedRect(M,y,W-M*2,38,3,3,'F');
-  const fields=[['Cliente',name+(company?` — ${company}`:'')] ,['Email',email],['País',country],['Producto',prodName],['Modalidad',modeLabel],['Total',totalAmt+' USD'],['Fecha de firma',today]];
-  let fy=y+7;
+  // Detalles del acuerdo: identidad del cliente + todos los detalles de
+  // producto, pago, método, token y red (los mismos que muestra el NDA).
+  const fields = [
+    ['Cliente', name + (company ? ` — ${company}` : '')],
+    ['Email', email],
+    ['País', country],
+    ...collectAgreementDetails(),
+    ['Fecha de firma', today],
+  ];
+
+  const boxH = fields.length * 5.5 + 3;
+  doc.setFillColor(245,246,250); doc.roundedRect(M,y,W-M*2,boxH,3,3,'F');
+  let fy=y+6;
   fields.forEach(([l,v])=>{
     doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(80,80,120); doc.text(l+':',M+4,fy);
-    doc.setFont('helvetica','normal'); doc.setTextColor(30,30,50); doc.text(String(v).slice(0,65),M+46,fy);
+    doc.setFont('helvetica','normal'); doc.setTextColor(30,30,50); doc.text(String(v).slice(0,70),M+56,fy);
     fy+=5.5;
   });
 
-  y+=46;
+  y+=boxH+8;
+  if(y>250){doc.addPage();y=18;}
   doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(26,26,46);
   doc.text('NON-DISCLOSURE & ENGAGEMENT AGREEMENT',W/2,y,{align:'center'});
   y+=6;
