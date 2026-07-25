@@ -1,0 +1,34 @@
+Datos de pago:
+ARS - 
+Alias: Agraound.LEMON
+CVU: 0000168300000004203016
+
+USD - 
+Nombre: Guido Gomez
+Banco: Lead Bank
+Routing number: 101019644
+Account number: 210953960839
+Tipo de cuenta: Checking
+Direccion: 1801 Main St., Kansas City, MO 64108
+Informacion importante: 
+* Se reciben USDt, 1 USD = 1 USDt
+Comision: ACH 1,5%, WIRE 1,5% + 12 USD (pasar costo a producto)
+Acreditacion: 1 a 3 días habiles.
+Mantenimiento: Solo se debita 1 USD los mese que depositas menos de 1'' USD. Sino depositas nada, no se cobra.
+
+EUR - 
+Tipo de cuenta: Business
+Nombre: Guido Gomez
+País: Malta
+IBAN: MT64CFTE28004000000000006494900
+Tipo de Transferencia: SEPA
+
+Crypto - (Guardar imagen de QR) 
+1000001292 (BEP20), 1000001294 (TRC20), 1000001296 (SOL), 1000001298 (Optimism)
+BTC - Bnb Chain (BEP20) - Direccion: 
+ETH - Bnb Chain (BEP20) - Direccion:
+ETH - Optimism (Red L2 de Ethereum) - Direccion: 
+USDT - Bnb Chain (BEP20) - Direccion: 
+USDT - Tron (TRC20) - Direccion:
+USDC - Bnb Chain (BEP20) - Direccion: 
+USDC - Solana (Red nativa de Solana) - Direccion:
