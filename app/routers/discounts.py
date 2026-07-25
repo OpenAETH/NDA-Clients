@@ -13,6 +13,7 @@ async def validate_discount(
     amount: Optional[float] = Query(
         None, description="Monto base (requerido para CUSTOM o productos a cotizar)"
     ),
+    lang: str = Query(store.DEFAULT_LANG, description="UI language: en | es"),
 ):
     """
     Valida un código de descuento contra un producto y devuelve el precio
@@ -30,7 +31,7 @@ async def validate_discount(
         base_price = amount
 
     try:
-        result = discounts.quote(base_price, product_code, code)
+        result = discounts.quote(base_price, product_code, code, lang=lang)
     except discounts.DiscountError as e:
         raise HTTPException(422, str(e))
 

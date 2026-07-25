@@ -35,9 +35,12 @@ def _parse_expiry(raw) -> Optional[date]:
         return None
 
 
-def resolve_code(code: str, product_code: str, today: Optional[date] = None) -> dict:
+def resolve_code(code: str, product_code: str, today: Optional[date] = None,
+                 lang: str = store.DEFAULT_LANG) -> dict:
     """
     Devuelve el código de descuento normalizado si es válido para `product_code`.
+    La descripción se localiza al idioma `lang` (los códigos guardan
+    `description` como paquete {en, es}).
     Lanza DiscountError con un mensaje apto para el usuario si no aplica.
     """
     if not code or not code.strip():
@@ -68,7 +71,7 @@ def resolve_code(code: str, product_code: str, today: Optional[date] = None) -> 
         "code":        match["code"].upper(),
         "type":        dtype,
         "value":       float(match.get("value", 0)),
-        "description": match.get("description", ""),
+        "description": store.localize(match.get("description", ""), lang),
     }
 
 
@@ -82,10 +85,12 @@ def apply_discount(base_price: float, disc: dict) -> float:
 
 
 def quote(base_price: Optional[float], product_code: str,
-          code: Optional[str] = None, today: Optional[date] = None) -> dict:
+          code: Optional[str] = None, today: Optional[date] = None,
+          lang: str = store.DEFAULT_LANG) -> dict:
     """
     Cotiza un precio: resuelve el código (si hay) y calcula el final.
     Devuelve un dict con base_price, final_price, discount info y ahorro.
+    La descripción del descuento se localiza al idioma `lang`.
     Lanza DiscountError si el código es inválido para el producto.
 
     Si base_price es None (producto "a cotizar" sin monto), no se puede
@@ -99,7 +104,7 @@ def quote(base_price: Optional[float], product_code: str,
             "amount_saved":   0.0,
         }
 
-    disc = resolve_code(code, product_code, today)
+    disc = resolve_code(code, product_code, today, lang)
 
     if base_price is None:
         raise DiscountError("Indicá primero el monto para aplicar el código.")

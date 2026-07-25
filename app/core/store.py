@@ -51,6 +51,48 @@ def _json_default(obj):
     raise TypeError(f"No serializable a JSON: {type(obj)}")
 
 
+# ── i18n del catálogo ──────────────────────────────────────────────
+# Los campos traducibles del catálogo se guardan como {"en": ..., "es": ...}.
+# `localize()` los colapsa al idioma pedido; el resto de los datos (precios,
+# alias, CVU/IBAN, direcciones, rutas de QR, nombres de red) se deja intacto.
+SUPPORTED_LANGS = ("en", "es")
+DEFAULT_LANG = "en"
+
+
+def normalize_lang(lang: Optional[str]) -> str:
+    """Idioma soportado más cercano (por prefijo). Cae a DEFAULT_LANG."""
+    if lang:
+        code = lang.strip().lower().replace("_", "-").split("-")[0]
+        if code in SUPPORTED_LANGS:
+            return code
+    return DEFAULT_LANG
+
+
+def _is_translation(value) -> bool:
+    """True si el dict es un paquete de traducción {en/es} y no datos comunes."""
+    return (
+        isinstance(value, dict)
+        and len(value) > 0
+        and all(k in SUPPORTED_LANGS for k in value)
+    )
+
+
+def localize(value, lang: str = DEFAULT_LANG):
+    """
+    Colapsa recursivamente los paquetes {en, es} al idioma `lang`
+    (fallback: DEFAULT_LANG, luego cualquier idioma disponible). Recorre
+    listas y dicts anidados sin alterar los valores no traducibles.
+    """
+    lang = normalize_lang(lang)
+    if _is_translation(value):
+        return value.get(lang) or value.get(DEFAULT_LANG) or next(iter(value.values()))
+    if isinstance(value, dict):
+        return {k: localize(v, lang) for k, v in value.items()}
+    if isinstance(value, list):
+        return [localize(v, lang) for v in value]
+    return value
+
+
 def _matches(doc: dict, filters: dict) -> bool:
     """Coincidencia por igualdad simple de todos los campos del filtro."""
     return all(doc.get(k) == v for k, v in filters.items())

@@ -85,6 +85,7 @@ class EngagementCreate(BaseModel):
     signature_type: SignatureType
     signature_data: str                            # base64 PNG
     payment_details: Optional[PaymentDetails] = None   # método/medio elegido
+    lang: str = "en"                                   # idioma para PDF/email
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
 

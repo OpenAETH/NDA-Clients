@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from typing import List
 
 from app.core import store
@@ -8,17 +8,18 @@ router = APIRouter()
 
 
 @router.get("", response_model=List[ProductOut])
-async def list_products():
-    """Return active products ordered by sort_order. Used by the frontend form."""
-    return store.products.find({"is_active": True}, sort=("sort_order", 1))
+async def list_products(lang: str = Query(store.DEFAULT_LANG, description="UI language: en | es")):
+    """Return active products ordered by sort_order, localized to `lang`."""
+    products = store.products.find({"is_active": True}, sort=("sort_order", 1))
+    return store.localize(products, lang)
 
 
 @router.get("/{code}", response_model=ProductOut)
-async def get_product(code: str):
+async def get_product(code: str, lang: str = Query(store.DEFAULT_LANG, description="UI language: en | es")):
     p = store.products.find_one({"code": code.upper(), "is_active": True})
     if not p:
         raise HTTPException(404, f"Product '{code}' not found")
-    return p
+    return store.localize(p, lang)
 
 
 @router.post("", response_model=ProductOut, status_code=201)

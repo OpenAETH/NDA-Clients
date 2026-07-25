@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,11 +17,17 @@
   }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--brand); line-height: 1.6; }
 
-  .page-header { background: var(--brand); color: white; padding: 2rem 1.5rem; text-align: center; }
+  .page-header { position: relative; background: var(--brand); color: white; padding: 2rem 1.5rem; text-align: center; }
   .page-header .logo-line { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; margin-bottom: 0.5rem; }
   .page-header h1 { font-size: 1.6rem; font-weight: 600; margin-bottom: 0.3rem; }
   .page-header p { opacity: 0.7; font-size: 0.9rem; }
   .accent-bar { height: 4px; background: linear-gradient(90deg, var(--accent) 0%, var(--accent2) 100%); }
+
+  /* Language toggle */
+  .lang-toggle { position: absolute; top: 1rem; right: 1rem; display: inline-flex; border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; overflow: hidden; background: rgba(255,255,255,0.06); }
+  .lang-toggle button { background: transparent; border: none; color: rgba(255,255,255,0.65); font-size: 12px; font-weight: 600; letter-spacing: 0.05em; padding: 5px 12px; cursor: pointer; transition: all 0.15s; }
+  .lang-toggle button.active { background: var(--accent); color: #fff; }
+  @media(max-width:480px){ .lang-toggle { top: 0.75rem; right: 0.75rem; } }
 
   .container { max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; }
 
@@ -209,9 +215,13 @@
 <body>
 
 <div class="page-header">
+  <div class="lang-toggle" id="lang-toggle">
+    <button type="button" data-lang="en" onclick="setLang('en')">EN</button>
+    <button type="button" data-lang="es" onclick="setLang('es')">ES</button>
+  </div>
   <div class="logo-line">Agraound Consulting &nbsp;/&nbsp; AETHERYON Systems</div>
   <h1>Non-Disclosure &amp; Engagement Agreement</h1>
-  <p>Completá el formulario para iniciar el proyecto</p>
+  <p data-i18n="header_subtitle">Complete the form to start the project</p>
 </div>
 <div class="accent-bar"></div>
 
@@ -219,101 +229,106 @@
 
   <!-- STEP 1 -->
   <div class="card">
-    <div class="card-title"><span class="step-badge">1</span> Datos del cliente</div>
+    <div class="card-title"><span class="step-badge">1</span> <span data-i18n="step1_title">Client information</span></div>
     <div class="form-row two">
-      <div><label>Nombre completo <span class="req">*</span></label><input type="text" id="client-name" placeholder="Ej: Juan García" oninput="updateNdaFills()"></div>
-      <div><label>Empresa / Organización</label><input type="text" id="client-company" placeholder="Ej: TechCorp S.A."></div>
+      <div><label><span data-i18n="lbl_name">Full name</span> <span class="req">*</span></label><input type="text" id="client-name" data-i18n-ph="ph_name" placeholder="e.g. John Smith" oninput="updateNdaFills()"></div>
+      <div><label data-i18n="lbl_company">Company / Organization</label><input type="text" id="client-company" data-i18n-ph="ph_company" placeholder="e.g. TechCorp Inc."></div>
     </div>
     <div class="form-row two">
-      <div><label>Email de contacto <span class="req">*</span></label><input type="email" id="client-email" placeholder="juan@empresa.com"></div>
-      <div><label>Teléfono / WhatsApp</label><input type="tel" id="client-phone" placeholder="+54 9 11 xxxxxxxx"></div>
+      <div><label><span data-i18n="lbl_email">Contact email</span> <span class="req">*</span></label><input type="email" id="client-email" data-i18n-ph="ph_email" placeholder="john@company.com"></div>
+      <div><label data-i18n="lbl_phone">Phone / WhatsApp</label><input type="tel" id="client-phone" placeholder="+1 555 xxxxxxx"></div>
     </div>
     <div class="form-row">
-      <div><label>País / Jurisdicción</label><input type="text" id="client-country" placeholder="Argentina" oninput="updateNdaFills()"></div>
+      <div><label data-i18n="lbl_country">Country / Jurisdiction</label><input type="text" id="client-country" data-i18n-ph="ph_country" placeholder="United States" oninput="updateNdaFills()"></div>
     </div>
   </div>
 
   <!-- STEP 2 -->
   <div class="card">
-    <div class="card-title"><span class="step-badge">2</span> Selección de producto / servicio</div>
+    <div class="card-title"><span class="step-badge">2</span> <span data-i18n="step2_title">Product / service selection</span></div>
     <div id="product-grid" class="product-grid">
       <!-- Skeleton while loading -->
       <div class="skeleton skel-card"></div>
       <div class="skeleton skel-card"></div>
       <div class="skeleton skel-card"></div>
     </div>
-    <div id="api-error" class="alert err" style="display:none;">
-      No se pudo cargar el catálogo de productos. Por favor recargá la página.
+    <div id="api-error" class="alert err" style="display:none;" data-i18n="err_products_load">
+      Could not load the product catalog. Please reload the page.
     </div>
     <div class="custom-row" id="custom-row">
-      <label>Descripción del requerimiento personalizado <span class="req">*</span></label>
-      <textarea id="custom-desc" placeholder="Describí qué necesitás: funcionalidades, integraciones, tecnologías, plazos, etc."></textarea>
+      <label><span data-i18n="lbl_custom_desc">Custom requirement description</span> <span class="req">*</span></label>
+      <textarea id="custom-desc" data-i18n-ph="ph_custom_desc" placeholder="Describe what you need: features, integrations, technologies, timelines, etc."></textarea>
       <div style="margin-top:0.75rem;">
-        <label>Monto acordado (USD) <span class="req">*</span></label>
-        <input type="number" id="custom-amount" min="1" step="0.01" placeholder="Ej: 13000"
+        <label><span data-i18n="lbl_agreed_amount">Agreed amount (USD)</span> <span class="req">*</span></label>
+        <input type="number" id="custom-amount" min="1" step="0.01" data-i18n-ph="ph_agreed_amount" placeholder="e.g. 13000"
                oninput="onCustomAmountChange()">
-        <div class="info-text">Ingresá el importe total a pagar que acordaste con el proveedor.</div>
+        <div class="info-text" data-i18n="info_agreed_amount">Enter the total amount to pay that you agreed with the provider.</div>
       </div>
     </div>
-    <div id="product-error" class="alert warn" style="display:none;">Por favor seleccioná un producto.</div>
+    <div id="product-error" class="alert warn" style="display:none;" data-i18n="err_select_product">Please select a product.</div>
   </div>
 
-  <!-- STEP 3 — Activación del proyecto -->
+  <!-- STEP 3 — Project activation -->
   <div class="card">
-    <div class="card-title"><span class="step-badge">3</span> Activación del proyecto</div>
+    <div class="card-title"><span class="step-badge">3</span> <span data-i18n="step3_title">Project activation</span></div>
 
-    <!-- 3.1 Modalidad de pago -->
-    <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);">Modalidad de pago</div>
+    <!-- 3.1 Payment mode -->
+    <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);" data-i18n="lbl_payment_mode">Payment mode</div>
     <div class="payment-modes">
       <div class="payment-mode selected" id="mode-hitos" onclick="selectPaymentMode('hitos')">
-        <div class="pm-title">Por hitos</div>
-        <div class="pm-desc">3 pagos distribuidos según avance</div>
+        <div class="pm-title" data-i18n="mode_hitos_title">By milestones</div>
+        <div class="pm-desc" data-i18n="mode_hitos_desc">3 payments distributed by progress</div>
       </div>
       <div class="payment-mode" id="mode-anticipado" onclick="selectPaymentMode('anticipado')">
-        <div class="pm-title">Pago anticipado</div>
-        <div class="pm-desc">Un solo pago al inicio</div>
-        <div class="pm-discount" id="discount-label">Descuento disponible</div>
+        <div class="pm-title" data-i18n="mode_ant_title">Upfront payment</div>
+        <div class="pm-desc" data-i18n="mode_ant_desc">A single payment at the start</div>
+        <div class="pm-discount" id="discount-label" data-i18n="discount_available">Discount available</div>
       </div>
     </div>
-    <table class="milestone-table"><thead><tr><th>Hito / Concepto</th><th>%</th><th>Monto (USD)</th><th>Cuándo</th></tr></thead>
+    <table class="milestone-table"><thead><tr>
+      <th data-i18n="th_milestone">Milestone / Concept</th>
+      <th>%</th>
+      <th data-i18n="th_amount">Amount (USD)</th>
+      <th data-i18n="th_when">When</th>
+    </tr></thead>
       <tbody id="milestone-body"></tbody>
     </table>
     <div class="discount-box" id="discount-box">
-      <label>¿Tenés un código de descuento?</label>
+      <label data-i18n="lbl_discount_q">Have a discount code?</label>
       <div class="discount-row">
-        <input type="text" id="discount-input" placeholder="Ingresá tu código" autocomplete="off"
+        <input type="text" id="discount-input" data-i18n-ph="ph_discount" placeholder="Enter your code" autocomplete="off"
                oninput="onDiscountInput()">
-        <button type="button" class="btn-sm" id="discount-apply" onclick="applyDiscount()">Aplicar</button>
+        <button type="button" class="btn-sm" id="discount-apply" onclick="applyDiscount()" data-i18n="btn_apply">Apply</button>
       </div>
       <div id="discount-msg" class="discount-msg" style="display:none;"></div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- 3.2 Método de pago -->
-    <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);">Método de pago</div>
+    <!-- 3.2 Payment method -->
+    <div style="font-size:13px;font-weight:500;margin-bottom:0.5rem;color:var(--brand);" data-i18n="lbl_payment_method">Payment method</div>
     <div class="pm-tabs" id="pm-tabs"></div>
     <div class="crypto-token-select" id="crypto-token-select" style="display:none;">
-      <label>¿Con qué token vas a pagar?</label>
+      <label data-i18n="lbl_crypto_token">Which token will you pay with?</label>
       <div class="crypto-token-tabs" id="crypto-token-tabs"></div>
       <div class="crypto-network-select" id="crypto-network-select" style="display:none;">
-        <label>Red de envío</label>
+        <label data-i18n="lbl_crypto_network">Sending network</label>
         <div class="crypto-network-tabs" id="crypto-network-tabs"></div>
       </div>
       <div class="crypto-wallet" id="crypto-wallet" style="display:none;"></div>
     </div>
     <div id="pm-panels"></div>
 
-    <!-- 3.3 Resumen de pago: valor del proyecto vs. pago de hoy -->
+    <!-- 3.3 Payment summary: project value vs. today's payment -->
     <div class="pay-summary" style="margin-top:1rem;">
       <div class="ps-row ps-project">
-        <div class="ps-label">Valor del proyecto</div>
+        <div class="ps-label" data-i18n="lbl_project_value">Project value</div>
         <div class="ps-value" id="ps-project-value">USD 0.00</div>
       </div>
       <div class="ps-row">
         <div>
-          <div class="td-label">PAGO DE HOY</div>
-          <div class="ps-sub" id="total-mode-label">Pago por hitos</div>
+          <div class="td-label" data-i18n="lbl_today_payment">TODAY'S PAYMENT</div>
+          <div class="ps-sub" id="total-mode-label">Milestone payment</div>
         </div>
         <div style="text-align:right;">
           <div class="td-base" id="total-base">USD 0.00</div>
@@ -324,96 +339,82 @@
       </div>
     </div>
 
-    <!-- 3.4 Comprobante de pago (obligatorio) -->
-    <div style="font-size:13px;font-weight:500;margin:1.25rem 0 0.5rem;color:var(--brand);">Comprobante de pago <span class="req">*</span></div>
+    <!-- 3.4 Payment receipt (required) -->
+    <div style="font-size:13px;font-weight:500;margin:1.25rem 0 0.5rem;color:var(--brand);"><span data-i18n="lbl_receipt">Payment receipt</span> <span class="req">*</span></div>
     <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()"
          ondragover="event.preventDefault();this.classList.add('dragover')"
          ondragleave="this.classList.remove('dragover')"
          ondrop="handleDrop(event)">
       <div class="upload-icon">&#8679;</div>
-      <p><strong>Hacer clic o arrastrar archivo</strong></p>
-      <p>PDF, JPG, PNG hasta 10 MB</p>
+      <p><strong data-i18n="upload_click">Click or drag a file</strong></p>
+      <p data-i18n="upload_types">PDF, JPG, PNG up to 10 MB</p>
       <input type="file" id="file-input" style="display:none" accept=".pdf,.jpg,.jpeg,.png" onchange="handleFileSelect(event)">
     </div>
     <div id="upload-preview"></div>
-    <div class="info-text">Cargá el comprobante del pago inicial para habilitar la firma del NDA. El pago inicial activa el proyecto.</div>
+    <div class="info-text" data-i18n="info_receipt">Upload the initial payment receipt to enable NDA signing. The initial payment activates the project.</div>
 
     <div class="divider"></div>
     <button class="btn-primary" id="continue-nda-btn" style="margin-bottom:0;" disabled onclick="goToNda()">
-      Continuar a la firma del NDA &#8595;
+      <span data-i18n="btn_continue_nda">Continue to NDA signing</span> &#8595;
     </button>
   </div>
 
-  <!-- STEP 4 — NDA (con todos los detalles) + Firma digital -->
+  <!-- STEP 4 — NDA (full details) + digital signature -->
   <div class="card" id="step-nda">
-    <div class="card-title"><span class="step-badge">4</span> Firma del NDA</div>
+    <div class="card-title"><span class="step-badge">4</span> <span data-i18n="step4_title">NDA signature</span></div>
     <div class="nda-scroll">
       <h3>NON-DISCLOSURE &amp; ENGAGEMENT AGREEMENT</h3>
-      <p style="margin-bottom:0.75rem;font-size:12px;text-align:center;color:#666;">
-        Este acuerdo es celebrado entre <strong>Agraound Consulting / AETHERYON Systems</strong> ("Proveedor")
-        y <strong id="nda-client-fill" class="fill">[Nombre del Cliente]</strong> ("Cliente"),
-        con fecha <strong id="nda-date-fill" class="fill">[Fecha]</strong>.
+      <p style="margin-bottom:0.75rem;font-size:12px;text-align:center;color:#666;" id="nda-intro">
       </p>
 
-      <!-- Detalles del acuerdo (dinámicos) -->
+      <!-- Agreement details (dynamic) -->
       <div class="nda-details">
-        <div class="ndx-title">Detalles del acuerdo</div>
+        <div class="ndx-title" data-i18n="nda_details_title">Agreement details</div>
         <table class="ndx-table" id="nda-detail-table"><tbody></tbody></table>
       </div>
 
-      <div class="clause"><strong>1. Objeto.</strong> Evaluación, desarrollo e implementación de sistemas de datos, APIs y/o código según la propuesta aceptada, correspondiente al producto/servicio detallado arriba.</div>
-      <div class="clause"><strong>2. Información Confidencial.</strong> Incluye datasets, bases de código, infraestructura, credenciales e información de negocio compartida entre las partes.</div>
-      <div class="clause"><strong>3. Obligaciones.</strong> Uso exclusivo para los fines del proyecto. Prohibida toda divulgación. Aplicar medidas razonables de protección.</div>
-      <div class="clause"><strong>4. Acceso &amp; Seguridad.</strong> Acceso de solo lectura cuando sea posible. Sin evasión de seguridad. Las vulnerabilidades serán reportadas.</div>
-      <div class="clause"><strong>5. Exclusiones.</strong> Información pública, conocimiento previo, desarrollo independiente o divulgación legal obligatoria.</div>
-      <div class="clause"><strong>6. Vigencia.</strong> Válido por 2 años. La confidencialidad persiste tras la terminación del acuerdo.</div>
-      <div class="clause"><strong>7. Manejo de Datos.</strong> Usados únicamente durante el proyecto. Eliminados bajo solicitud. Sin retención innecesaria.</div>
-      <div class="clause"><strong>8. Condiciones de Pago.</strong> <span id="nda-pay-clause">Se aplican la modalidad, los montos y el método de pago detallados arriba.</span> El trabajo comienza después del pago inicial.</div>
-      <div class="clause"><strong>9. Sin Transferencia de PI.</strong> No se transfieren derechos de propiedad intelectual salvo acuerdo escrito adicional.</div>
-      <div class="clause"><strong>10. Limitación de Responsabilidad.</strong> Sin responsabilidad por daños indirectos o consecuentes.</div>
-      <div class="clause"><strong>11. Ley Aplicable.</strong> <strong id="nda-juris-fill" class="fill">[Jurisdicción a definir]</strong>.</div>
-      <div class="clause"><strong>12. Aceptación.</strong> Este acuerdo es válido mediante firma digital. La ejecución del pago inicial implica aceptación total.</div>
+      <div id="nda-clauses"></div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- Firma digital (integrada en el mismo paso) -->
-    <div style="font-size:13px;font-weight:500;margin-bottom:0.75rem;color:var(--brand);">Firma digital</div>
+    <!-- Digital signature (integrated in the same step) -->
+    <div style="font-size:13px;font-weight:500;margin-bottom:0.75rem;color:var(--brand);" data-i18n="lbl_digital_sig">Digital signature</div>
     <div class="sig-modes">
-      <button class="sig-mode-btn active" id="btn-canvas" onclick="switchSigMode('canvas')">Firma a mano</button>
-      <button class="sig-mode-btn" id="btn-type" onclick="switchSigMode('type')">Firma escrita</button>
+      <button class="sig-mode-btn active" id="btn-canvas" onclick="switchSigMode('canvas')" data-i18n="sig_draw">Draw signature</button>
+      <button class="sig-mode-btn" id="btn-type" onclick="switchSigMode('type')" data-i18n="sig_type">Typed signature</button>
     </div>
     <div id="canvas-container">
       <canvas id="sig-canvas" width="700" height="140"></canvas>
       <div class="canvas-actions">
-        <button class="btn-sm" onclick="clearCanvas()">Borrar</button>
-        <span class="info-text" style="align-self:center;">Dibujá tu firma con el mouse o dedo</span>
+        <button class="btn-sm" onclick="clearCanvas()" data-i18n="btn_clear">Clear</button>
+        <span class="info-text" style="align-self:center;" data-i18n="sig_draw_hint">Draw your signature with the mouse or finger</span>
       </div>
     </div>
     <div id="type-container">
-      <label>Escribí tu nombre completo</label>
-      <input type="text" id="typed-sig-input" placeholder="Tu nombre..." oninput="updateTypedSig(this.value)">
+      <label data-i18n="sig_type_label">Type your full name</label>
+      <input type="text" id="typed-sig-input" data-i18n-ph="ph_your_name" placeholder="Your name..." oninput="updateTypedSig(this.value)">
       <div id="typed-preview"></div>
     </div>
-    <div id="sig-error" class="alert warn" style="display:none;">Por favor agregá tu firma.</div>
+    <div id="sig-error" class="alert warn" style="display:none;" data-i18n="err_add_sig">Please add your signature.</div>
   </div>
 
   <!-- STEP 5 -->
   <div class="card">
-    <div class="card-title"><span class="step-badge">5</span> Aceptar y enviar</div>
+    <div class="card-title"><span class="step-badge">5</span> <span data-i18n="step5_title">Accept and submit</span></div>
     <div class="agree-row">
       <input type="checkbox" id="agree-nda">
-      <label for="agree-nda">He leído y acepto el Acuerdo de Confidencialidad y las condiciones de pago indicadas arriba.</label>
+      <label for="agree-nda" data-i18n="agree_nda">I have read and accept the Non-Disclosure Agreement and the payment terms indicated above.</label>
     </div>
     <div class="agree-row">
       <input type="checkbox" id="agree-payment">
-      <label for="agree-payment">Entiendo que el trabajo comienza luego de confirmar el pago inicial.</label>
+      <label for="agree-payment" data-i18n="agree_payment">I understand that work begins after confirming the initial payment.</label>
     </div>
     <div id="submit-error" class="alert err" style="display:none;"></div>
     <button class="btn-primary" id="submit-btn" onclick="submitForm()">
-      <span id="submit-label">&#10003; Firmar y enviar NDA</span>
+      <span id="submit-label">&#10003; <span data-i18n="btn_submit">Sign and submit NDA</span></span>
     </button>
-    <button class="btn-secondary" onclick="downloadLocalPreview()">&#10515; Descargar vista previa local (sin enviar)</button>
+    <button class="btn-secondary" onclick="downloadLocalPreview()">&#10515; <span data-i18n="btn_local_preview">Download local preview (without submitting)</span></button>
   </div>
 
 </div>
@@ -421,12 +422,12 @@
 <!-- Success -->
 <div class="container" id="success-screen">
   <div class="success-icon">&#10003;</div>
-  <h2>¡NDA firmado y enviado!</h2>
-  <p>Revisá tu email — te enviamos el PDF firmado.<br>
-     Tu número de referencia: <span class="ref-code" id="ref-code">—</span></p>
-  <button class="download-btn" id="download-local-btn">&#8681; Descargar copia local del PDF</button>
-  <p style="margin-top:1.5rem;" class="info-text">
-    Nos pondremos en contacto para confirmar el pago y activar el proyecto.
+  <h2 data-i18n="success_title">NDA signed and submitted!</h2>
+  <p><span data-i18n="success_body">Check your email — we sent you the signed PDF.</span><br>
+     <span data-i18n="success_ref">Your reference number:</span> <span class="ref-code" id="ref-code">—</span></p>
+  <button class="download-btn" id="download-local-btn">&#8681; <span data-i18n="btn_download_copy">Download local copy of the PDF</span></button>
+  <p style="margin-top:1.5rem;" class="info-text" data-i18n="success_contact">
+    We'll get in touch to confirm the payment and activate the project.
   </p>
 </div>
 
@@ -439,6 +440,337 @@
 const API_BASE = window.location.hostname === '0.0.0.0'
   ? 'http://0.0.0.0:10000'
   : window.location.origin;
+
+// ═══════════════════════════════════════════════════════
+// I18N — diccionario de todos los textos estáticos y dinámicos de la UI.
+// El idioma por defecto es inglés; la selección se guarda en localStorage.
+// El contenido dinámico (productos, métodos de pago, descuentos) se pide a
+// la API con ?lang= y ya llega traducido; acá solo van los textos del cliente.
+// ═══════════════════════════════════════════════════════
+const I18N = {
+  en: {
+    header_subtitle: "Complete the form to start the project",
+    step1_title: "Client information",
+    lbl_name: "Full name", ph_name: "e.g. John Smith",
+    lbl_company: "Company / Organization", ph_company: "e.g. TechCorp Inc.",
+    lbl_email: "Contact email", ph_email: "john@company.com",
+    lbl_phone: "Phone / WhatsApp",
+    lbl_country: "Country / Jurisdiction", ph_country: "United States",
+    step2_title: "Product / service selection",
+    err_products_load: "Could not load the product catalog. Please reload the page.",
+    lbl_custom_desc: "Custom requirement description",
+    ph_custom_desc: "Describe what you need: features, integrations, technologies, timelines, etc.",
+    lbl_agreed_amount: "Agreed amount (USD)", ph_agreed_amount: "e.g. 13000",
+    info_agreed_amount: "Enter the total amount to pay that you agreed with the provider.",
+    err_select_product: "Please select a product.",
+    step3_title: "Project activation",
+    lbl_payment_mode: "Payment mode",
+    mode_hitos_title: "By milestones", mode_hitos_desc: "3 payments distributed by progress",
+    mode_ant_title: "Upfront payment", mode_ant_desc: "A single payment at the start",
+    discount_available: "Discount available",
+    th_milestone: "Milestone / Concept", th_amount: "Amount (USD)", th_when: "When",
+    lbl_discount_q: "Have a discount code?", ph_discount: "Enter your code", btn_apply: "Apply",
+    lbl_payment_method: "Payment method",
+    lbl_crypto_token: "Which token will you pay with?", lbl_crypto_network: "Sending network",
+    lbl_project_value: "Project value", lbl_today_payment: "TODAY'S PAYMENT",
+    lbl_receipt: "Payment receipt",
+    upload_click: "Click or drag a file", upload_types: "PDF, JPG, PNG up to 10 MB",
+    info_receipt: "Upload the initial payment receipt to enable NDA signing. The initial payment activates the project.",
+    btn_continue_nda: "Continue to NDA signing",
+    step4_title: "NDA signature",
+    nda_details_title: "Agreement details",
+    lbl_digital_sig: "Digital signature",
+    sig_draw: "Draw signature", sig_type: "Typed signature",
+    btn_clear: "Clear", sig_draw_hint: "Draw your signature with the mouse or finger",
+    sig_type_label: "Type your full name", ph_your_name: "Your name...",
+    err_add_sig: "Please add your signature.",
+    step5_title: "Accept and submit",
+    agree_nda: "I have read and accept the Non-Disclosure Agreement and the payment terms indicated above.",
+    agree_payment: "I understand that work begins after confirming the initial payment.",
+    btn_submit: "Sign and submit NDA",
+    btn_local_preview: "Download local preview (without submitting)",
+    success_title: "NDA signed and submitted!",
+    success_body: "Check your email — we sent you the signed PDF.",
+    success_ref: "Your reference number:",
+    btn_download_copy: "Download local copy of the PDF",
+    success_contact: "We'll get in touch to confirm the payment and activate the project.",
+
+    // Dynamic / JS
+    to_quote: "To be quoted",
+    quote_price: "To be quoted",
+    rate_fresh: "Quote just updated",
+    rate_ago: "Quote updated {min} min ago",
+    today_upfront: "Single upfront payment",
+    today_first_milestone_fmt: "Milestone 1 — {label} ({pct}%) · On signing",
+    today_first_milestone: "First milestone — On signing",
+    mode_label_hitos: "Milestone payment",
+    mode_label_upfront: "Single upfront payment",
+    choose_token: "Choose a token",
+    when_sign: "On signing", when_progress: "On progress", when_final: "On completion",
+    discount_pct_fmt: "{pct}% discount", discount_none: "No additional discount",
+    enter_amount_hint: "Enter the agreed amount to see the breakdown.",
+    milestone_row: "Milestone {n} — {label}",
+    total: "TOTAL",
+    upfront_single: "Single upfront payment",
+    savings_fmt: "You save {amount} USD{detail}",
+    savings_ant: "{pct}% upfront", savings_code: "code {code}",
+    disc_select_product: "Please select a product first.",
+    disc_enter_amount: "Enter the agreed amount first.",
+    disc_ok_fmt: "✓ {desc} — you save ${amount} USD.",
+    disc_applied: "Code applied",
+    payinfo_load_err: "Could not load payment data. We'll send it to you by email.",
+    copy: "Copy", copied: "✓ Copied", copy_err: "Error",
+    fields_on_request: "Details available on request — we'll email them to you.",
+    addr_label_fmt: "{token} address — {network}",
+    nda_client_ph: "[Client Name]", nda_juris_ph: "[Jurisdiction to be defined]",
+    nda_intro_fmt: "This agreement is entered into between {provider} (\"Provider\") and {client} (\"Client\"), dated {date}.",
+    provider_name: "Agraound Consulting / AETHERYON Systems",
+    // Agreement detail rows
+    ad_product: "Product / Service", ad_requirement: "Requirement",
+    ad_project_value: "Project value", ad_payment_mode: "Payment mode",
+    ad_mode_hitos: "Milestone payment (3 installments)", ad_mode_upfront: "Single upfront payment",
+    ad_discount_code: "Discount code", ad_agreed_total: "Agreed total (USD)",
+    ad_milestone_fmt: "Milestone {n} — {label} ({pct}%) · {when}",
+    ad_method: "Payment method", ad_token: "Token", ad_network: "Network", ad_address: "Address",
+    ad_today_hitos_fmt: "Today's payment — Milestone 1 ({pct}%, on signing)",
+    ad_today_hitos: "Today's payment (on signing)",
+    ad_today_upfront: "Today's payment (single payment, on signing)",
+    // NDA clauses (12)
+    clauses: [
+      ["1. Purpose.", "Evaluation, development and implementation of data systems, APIs and/or code per the accepted proposal, corresponding to the product/service detailed above."],
+      ["2. Confidential Information.", "Includes datasets, codebases, infrastructure, credentials and business information shared between the parties."],
+      ["3. Obligations.", "Exclusive use for the purposes of the project. All disclosure prohibited. Reasonable protection measures applied."],
+      ["4. Access & Security.", "Read-only access where possible. No security bypass. Vulnerabilities will be reported."],
+      ["5. Exclusions.", "Public information, prior knowledge, independent development or legally mandated disclosure."],
+      ["6. Term.", "Valid for 2 years. Confidentiality survives termination of the agreement."],
+      ["7. Data Handling.", "Used only during the project. Deleted upon request. No unnecessary retention."],
+      ["8. Payment Terms.", "The payment mode, amounts and method detailed above apply.", " Work begins after the initial payment."],
+      ["9. No IP Transfer.", "No intellectual property rights are transferred except by additional written agreement."],
+      ["10. Limitation of Liability.", "No liability for indirect or consequential damages."],
+      ["11. Governing Law.", "JURISDICTION"],
+      ["12. Acceptance.", "This agreement is valid via digital signature. Execution of the initial payment implies full acceptance."],
+    ],
+    clause8_hitos: "The payment is made by milestones per the breakdown above (40% on signing, 30% at intermediate milestone, 30% on final delivery).",
+    clause8_upfront: "The payment is made upfront in a single disbursement per the breakdown above.",
+    clause8_method_fmt: " Agreed payment method: {method}.",
+    // Upload / validation
+    file_bad_format: "&#10007; Format not allowed. Accepted: PDF, JPG, PNG.",
+    file_too_big: "&#10007; The file exceeds 10 MB.",
+    v_name: "Name is required.", v_email: "Email is required.",
+    v_product: "Select a product.", v_amount: "Enter the agreed amount.",
+    v_sig: "Add your signature.", v_receipt: "Upload the payment receipt (step 3).",
+    v_agree_nda: "You must accept the NDA.", v_agree_pay: "You must confirm the payment terms.",
+    sending: "Submitting...", uploading: "Uploading receipt...",
+    submit_error_fmt: "Submit error: {msg}. Try again or download the local preview.",
+    // Local PDF
+    pdf_local_note: "Local copy — the official PDF was sent by email",
+    pdf_client: "Client", pdf_email: "Email", pdf_country: "Country",
+    pdf_sign_date: "Signature date", pdf_na: "N/A",
+    pdf_agreement_title: "NON-DISCLOSURE & ENGAGEMENT AGREEMENT",
+    pdf_sig_title: "Client Digital Signature",
+    pdf_signed_by: "Signed by: {name}", pdf_email_line: "Email: {email}",
+    pdf_datetime: "Date and time: {dt}", pdf_ref: "Reference: {ref}",
+    pdf_footer: "Confidential — Agraound Consulting / AETHERYON Systems — agraound.com",
+    pdf_clauses: [
+      ["1. Purpose.", "Evaluation, development and implementation of data systems, APIs and/or code per the accepted proposal."],
+      ["2. Confidential Information.", "Includes datasets, codebases, infrastructure, credentials and business information shared between the parties."],
+      ["3. Obligations.", "Exclusive use for the purposes of the project. All disclosure prohibited. Reasonable protection measures applied."],
+      ["4. Access & Security.", "Read-only access where possible. No security bypass. Vulnerabilities will be reported."],
+      ["5. Exclusions.", "Public information, prior knowledge, independent development or legally mandated disclosure."],
+      ["6. Term.", "Valid for 2 years. Confidentiality survives termination of the agreement."],
+      ["7. Data Handling.", "Used only during the project. Deleted upon request. No unnecessary retention."],
+      ["8. Payment Terms.", "40% on signing, 30% at intermediate milestone, 30% on final delivery. Work begins after the initial payment."],
+      ["9. No IP Transfer.", "No intellectual property rights are transferred except by additional written agreement."],
+      ["10. Limitation of Liability.", "No liability for indirect or consequential damages."],
+      ["12. Acceptance.", "This agreement is valid via digital signature. Execution of the initial payment implies full acceptance."],
+    ],
+    pdf_clause11: "11. Governing Law.",
+    locale: "en-US",
+  },
+  es: {
+    header_subtitle: "Completá el formulario para iniciar el proyecto",
+    step1_title: "Datos del cliente",
+    lbl_name: "Nombre completo", ph_name: "Ej: Juan García",
+    lbl_company: "Empresa / Organización", ph_company: "Ej: TechCorp S.A.",
+    lbl_email: "Email de contacto", ph_email: "juan@empresa.com",
+    lbl_phone: "Teléfono / WhatsApp",
+    lbl_country: "País / Jurisdicción", ph_country: "Argentina",
+    step2_title: "Selección de producto / servicio",
+    err_products_load: "No se pudo cargar el catálogo de productos. Por favor recargá la página.",
+    lbl_custom_desc: "Descripción del requerimiento personalizado",
+    ph_custom_desc: "Describí qué necesitás: funcionalidades, integraciones, tecnologías, plazos, etc.",
+    lbl_agreed_amount: "Monto acordado (USD)", ph_agreed_amount: "Ej: 13000",
+    info_agreed_amount: "Ingresá el importe total a pagar que acordaste con el proveedor.",
+    err_select_product: "Por favor seleccioná un producto.",
+    step3_title: "Activación del proyecto",
+    lbl_payment_mode: "Modalidad de pago",
+    mode_hitos_title: "Por hitos", mode_hitos_desc: "3 pagos distribuidos según avance",
+    mode_ant_title: "Pago anticipado", mode_ant_desc: "Un solo pago al inicio",
+    discount_available: "Descuento disponible",
+    th_milestone: "Hito / Concepto", th_amount: "Monto (USD)", th_when: "Cuándo",
+    lbl_discount_q: "¿Tenés un código de descuento?", ph_discount: "Ingresá tu código", btn_apply: "Aplicar",
+    lbl_payment_method: "Método de pago",
+    lbl_crypto_token: "¿Con qué token vas a pagar?", lbl_crypto_network: "Red de envío",
+    lbl_project_value: "Valor del proyecto", lbl_today_payment: "PAGO DE HOY",
+    lbl_receipt: "Comprobante de pago",
+    upload_click: "Hacer clic o arrastrar archivo", upload_types: "PDF, JPG, PNG hasta 10 MB",
+    info_receipt: "Cargá el comprobante del pago inicial para habilitar la firma del NDA. El pago inicial activa el proyecto.",
+    btn_continue_nda: "Continuar a la firma del NDA",
+    step4_title: "Firma del NDA",
+    nda_details_title: "Detalles del acuerdo",
+    lbl_digital_sig: "Firma digital",
+    sig_draw: "Firma a mano", sig_type: "Firma escrita",
+    btn_clear: "Borrar", sig_draw_hint: "Dibujá tu firma con el mouse o dedo",
+    sig_type_label: "Escribí tu nombre completo", ph_your_name: "Tu nombre...",
+    err_add_sig: "Por favor agregá tu firma.",
+    step5_title: "Aceptar y enviar",
+    agree_nda: "He leído y acepto el Acuerdo de Confidencialidad y las condiciones de pago indicadas arriba.",
+    agree_payment: "Entiendo que el trabajo comienza luego de confirmar el pago inicial.",
+    btn_submit: "Firmar y enviar NDA",
+    btn_local_preview: "Descargar vista previa local (sin enviar)",
+    success_title: "¡NDA firmado y enviado!",
+    success_body: "Revisá tu email — te enviamos el PDF firmado.",
+    success_ref: "Tu número de referencia:",
+    btn_download_copy: "Descargar copia local del PDF",
+    success_contact: "Nos pondremos en contacto para confirmar el pago y activar el proyecto.",
+
+    // Dynamic / JS
+    to_quote: "A cotizar",
+    quote_price: "A cotizar",
+    rate_fresh: "Cotización actualizada recién",
+    rate_ago: "Cotización actualizada hace {min} min",
+    today_upfront: "Pago único anticipado",
+    today_first_milestone_fmt: "Hito 1 — {label} ({pct}%) · Al firmar",
+    today_first_milestone: "Primer hito — Al firmar",
+    mode_label_hitos: "Pago por hitos",
+    mode_label_upfront: "Pago único anticipado",
+    choose_token: "Elegí un token",
+    when_sign: "Al firmar", when_progress: "Al avanzar", when_final: "Al finalizar",
+    discount_pct_fmt: "{pct}% de descuento", discount_none: "Sin descuento adicional",
+    enter_amount_hint: "Ingresá el monto acordado para ver el detalle.",
+    milestone_row: "Hito {n} — {label}",
+    total: "TOTAL",
+    upfront_single: "Pago único anticipado",
+    savings_fmt: "Ahorrás {amount} USD{detail}",
+    savings_ant: "{pct}% anticipado", savings_code: "código {code}",
+    disc_select_product: "Primero seleccioná un producto.",
+    disc_enter_amount: "Ingresá primero el monto acordado.",
+    disc_ok_fmt: "✓ {desc} — ahorrás ${amount} USD.",
+    disc_applied: "Código aplicado",
+    payinfo_load_err: "No se pudieron cargar los datos de pago. Te los enviaremos por email.",
+    copy: "Copiar", copied: "✓ Copiado", copy_err: "Error",
+    fields_on_request: "Datos disponibles a pedido — te los enviaremos por email.",
+    addr_label_fmt: "Dirección {token} — {network}",
+    nda_client_ph: "[Nombre del Cliente]", nda_juris_ph: "[Jurisdicción a definir]",
+    nda_intro_fmt: "Este acuerdo es celebrado entre {provider} (\"Proveedor\") y {client} (\"Cliente\"), con fecha {date}.",
+    provider_name: "Agraound Consulting / AETHERYON Systems",
+    ad_product: "Producto / Servicio", ad_requirement: "Requerimiento",
+    ad_project_value: "Valor del proyecto", ad_payment_mode: "Modalidad de pago",
+    ad_mode_hitos: "Pago por hitos (3 cuotas)", ad_mode_upfront: "Pago único anticipado",
+    ad_discount_code: "Código de descuento", ad_agreed_total: "Total acordado (USD)",
+    ad_milestone_fmt: "Hito {n} — {label} ({pct}%) · {when}",
+    ad_method: "Método de pago", ad_token: "Token", ad_network: "Red", ad_address: "Dirección",
+    ad_today_hitos_fmt: "Pago de hoy — Hito 1 ({pct}%, al firmar)",
+    ad_today_hitos: "Pago de hoy (al firmar)",
+    ad_today_upfront: "Pago de hoy (pago único, al firmar)",
+    clauses: [
+      ["1. Objeto.", "Evaluación, desarrollo e implementación de sistemas de datos, APIs y/o código según la propuesta aceptada, correspondiente al producto/servicio detallado arriba."],
+      ["2. Información Confidencial.", "Incluye datasets, bases de código, infraestructura, credenciales e información de negocio compartida entre las partes."],
+      ["3. Obligaciones.", "Uso exclusivo para los fines del proyecto. Prohibida toda divulgación. Aplicar medidas razonables de protección."],
+      ["4. Acceso & Seguridad.", "Acceso de solo lectura cuando sea posible. Sin evasión de seguridad. Las vulnerabilidades serán reportadas."],
+      ["5. Exclusiones.", "Información pública, conocimiento previo, desarrollo independiente o divulgación legal obligatoria."],
+      ["6. Vigencia.", "Válido por 2 años. La confidencialidad persiste tras la terminación del acuerdo."],
+      ["7. Manejo de Datos.", "Usados únicamente durante el proyecto. Eliminados bajo solicitud. Sin retención innecesaria."],
+      ["8. Condiciones de Pago.", "Se aplican la modalidad, los montos y el método de pago detallados arriba.", " El trabajo comienza después del pago inicial."],
+      ["9. Sin Transferencia de PI.", "No se transfieren derechos de propiedad intelectual salvo acuerdo escrito adicional."],
+      ["10. Limitación de Responsabilidad.", "Sin responsabilidad por daños indirectos o consecuentes."],
+      ["11. Ley Aplicable.", "JURISDICTION"],
+      ["12. Aceptación.", "Este acuerdo es válido mediante firma digital. La ejecución del pago inicial implica aceptación total."],
+    ],
+    clause8_hitos: "El pago se realiza por hitos según el detalle anterior (40% al firmar, 30% en hito intermedio, 30% en entrega final).",
+    clause8_upfront: "El pago se realiza de forma anticipada en un único desembolso según el detalle anterior.",
+    clause8_method_fmt: " Medio de pago acordado: {method}.",
+    file_bad_format: "&#10007; Formato no permitido. Aceptados: PDF, JPG, PNG.",
+    file_too_big: "&#10007; El archivo supera los 10 MB.",
+    v_name: "Nombre obligatorio.", v_email: "Email obligatorio.",
+    v_product: "Seleccioná un producto.", v_amount: "Ingresá el monto acordado.",
+    v_sig: "Agregá tu firma.", v_receipt: "Cargá el comprobante de pago (paso 3).",
+    v_agree_nda: "Debés aceptar el NDA.", v_agree_pay: "Debés confirmar las condiciones de pago.",
+    sending: "Enviando...", uploading: "Subiendo comprobante...",
+    submit_error_fmt: "Error al enviar: {msg}. Intentá de nuevo o descargá la vista previa local.",
+    pdf_local_note: "Copia local — el PDF oficial fue enviado por email",
+    pdf_client: "Cliente", pdf_email: "Email", pdf_country: "País",
+    pdf_sign_date: "Fecha de firma", pdf_na: "N/D",
+    pdf_agreement_title: "NON-DISCLOSURE & ENGAGEMENT AGREEMENT",
+    pdf_sig_title: "Firma Digital del Cliente",
+    pdf_signed_by: "Firmado por: {name}", pdf_email_line: "Email: {email}",
+    pdf_datetime: "Fecha y hora: {dt}", pdf_ref: "Referencia: {ref}",
+    pdf_footer: "Confidencial — Agraound Consulting / AETHERYON Systems — agraound.com",
+    pdf_clauses: [
+      ["1. Objeto.", "Evaluación, desarrollo e implementación de sistemas de datos, APIs y/o código según la propuesta aceptada."],
+      ["2. Información Confidencial.", "Incluye datasets, bases de código, infraestructura, credenciales e información de negocio compartida entre las partes."],
+      ["3. Obligaciones.", "Uso exclusivo para los fines del proyecto. Prohibida toda divulgación. Aplicar medidas razonables de protección."],
+      ["4. Acceso & Seguridad.", "Acceso de solo lectura cuando sea posible. Sin evasión de seguridad. Las vulnerabilidades serán reportadas."],
+      ["5. Exclusiones.", "Información pública, conocimiento previo, desarrollo independiente o divulgación legal obligatoria."],
+      ["6. Vigencia.", "Válido por 2 años. La confidencialidad persiste tras la terminación del acuerdo."],
+      ["7. Manejo de Datos.", "Usados únicamente durante el proyecto. Eliminados bajo solicitud. Sin retención innecesaria."],
+      ["8. Condiciones de Pago.", "40% al firmar, 30% en hito intermedio, 30% en entrega final. El trabajo comienza después del pago inicial."],
+      ["9. Sin Transferencia de PI.", "No se transfieren derechos de propiedad intelectual salvo acuerdo escrito adicional."],
+      ["10. Limitación de Responsabilidad.", "Sin responsabilidad por daños indirectos o consecuentes."],
+      ["12. Aceptación.", "Este acuerdo es válido mediante firma digital. La ejecución del pago inicial implica aceptación total."],
+    ],
+    pdf_clause11: "11. Ley Aplicable.",
+    locale: "es-AR",
+  },
+};
+
+// Idioma activo (persistido). Default: inglés.
+let LANG = (() => {
+  try {
+    const saved = localStorage.getItem('nda_lang');
+    if (saved === 'en' || saved === 'es') return saved;
+  } catch (e) {}
+  return 'en';
+})();
+
+// Traducción con interpolación de {vars}. Fallback a inglés, luego a la clave.
+function t(key, vars) {
+  let s = (I18N[LANG] && I18N[LANG][key] != null) ? I18N[LANG][key]
+        : (I18N.en[key] != null ? I18N.en[key] : key);
+  if (vars && typeof s === 'string') {
+    for (const k in vars) s = s.replace(new RegExp('\\{' + k + '\\}', 'g'), vars[k]);
+  }
+  return s;
+}
+const locale = () => t('locale');
+
+// Aplica las traducciones a todo el marcado estático (textos y placeholders).
+function applyStaticI18n() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph')));
+  });
+  document.querySelectorAll('.lang-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === LANG);
+  });
+}
+
+// Cambia el idioma: re-pinta lo estático, re-consulta lo dinámico a la API en
+// el nuevo idioma y refresca todos los renders que dependen de textos.
+async function setLang(lang) {
+  if (lang !== 'en' && lang !== 'es') return;
+  LANG = lang;
+  try { localStorage.setItem('nda_lang', lang); } catch (e) {}
+  applyStaticI18n();
+  renderNdaClauses();
+  updateNdaFills();
+  // Recargar catálogo y datos de pago en el idioma elegido (preservando la
+  // selección actual del usuario cuando sea posible).
+  await Promise.all([loadProducts(), loadPaymentInfo()]);
+}
 
 // ═══════════════════════════════════════════════════════
 // STATE
@@ -468,21 +800,31 @@ let rateAgeSeconds  = null;   // antigüedad de la cotización cacheada (segundo
 // BOOT
 // ═══════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  applyStaticI18n();
+  renderNdaClauses();
   updateNdaFills();
   initCanvas();
   loadProducts();
   loadPaymentInfo();
 });
 
+// Momento de cada hito, sin ambigüedad. Índice = número de hito - 1. Depende
+// del idioma, así que es una función (no una constante).
+const milestoneWhen = () => [t('when_sign'), t('when_progress'), t('when_final')];
+
 // ═══════════════════════════════════════════════════════
 // LOAD PRODUCTS FROM API
 // ═══════════════════════════════════════════════════════
 async function loadProducts() {
   try {
-    const res = await fetch(`${API_BASE}/api/products`);
+    const res = await fetch(`${API_BASE}/api/products?lang=${LANG}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     PRODUCTS = await res.json();
+    // Mantener la selección del usuario tras un cambio de idioma.
+    if (selectedProd) selectedProd = PRODUCTS.find(p => p.code === selectedProd.code) || null;
+    document.getElementById('api-error').style.display = 'none';
     renderProducts();
+    updateMilestones();
   } catch (err) {
     console.error('[Products] Load failed:', err);
     document.getElementById('product-grid').innerHTML = '';
@@ -495,18 +837,20 @@ function renderProducts() {
   grid.innerHTML = '';
   PRODUCTS.forEach(p => {
     const badgeClass = { std: 'badge-std', prem: 'badge-prem', custom: 'badge-custom' }[p.badge_type] || 'badge-std';
-    const priceStr = p.base_price ? `$${Number(p.base_price).toLocaleString()}` : 'A cotizar';
+    const priceStr = p.base_price ? `$${Number(p.base_price).toLocaleString()}` : t('quote_price');
     const div = document.createElement('div');
     div.className = 'product-card';
     div.id = 'prod-' + p.code;
     div.onclick = () => selectProduct(p.code);
+    if (selectedProd && selectedProd.code === p.code) div.classList.add('selected');
     div.innerHTML = `
-      <div class="prod-badge ${badgeClass}">${p.badge_label || ''}</div>
-      <div class="prod-name">${p.name}</div>
-      <div class="prod-desc">${p.description || ''}</div>
+      <div class="prod-badge ${badgeClass}">${esc(p.badge_label || '')}</div>
+      <div class="prod-name">${esc(p.name)}</div>
+      <div class="prod-desc">${esc(p.description || '')}</div>
       <div class="prod-price">${priceStr}</div>`;
     grid.appendChild(div);
   });
+  document.getElementById('custom-row').classList.toggle('visible', !!(selectedProd && selectedProd.code === 'CUSTOM'));
 }
 
 function selectProduct(code) {
@@ -549,17 +893,14 @@ function selectPaymentMode(mode) {
 function updateTodayLabel() {
   const el = document.getElementById('total-mode-label');
   if (!el) return;
-  if (paymentMode === 'anticipado') { el.textContent = 'Pago único anticipado'; return; }
+  if (paymentMode === 'anticipado') { el.textContent = t('today_upfront'); return; }
   const first = ((selectedProd && selectedProd.milestones) || [])[0];
   el.textContent = first
-    ? `Hito 1 — ${first.label} (${first.pct}%) · Al firmar`
-    : 'Primer hito — Al firmar';
+    ? t('today_first_milestone_fmt', { label: first.label, pct: first.pct })
+    : t('today_first_milestone');
 }
 
 const fmtUSD = n => `$${Math.round(n).toLocaleString()}`;
-
-// Momento de cada hito, sin ambigüedad. Índice = número de hito - 1.
-const MILESTONE_WHEN = ['Al firmar', 'Al avanzar', 'Al finalizar'];
 
 // Monto que se paga HOY, en USD (moneda operativa). En modo hitos es el
 // primer hito (p. ej. 40% al firmar); en anticipado, el total. 0 si no hay
@@ -598,9 +939,9 @@ const TOKEN_ICONS = { BTC: '₿', ETH: 'Ξ', USDT: '₮', USDC: '＄' };
 // Texto de confianza según la antigüedad de la cotización.
 function fmtAge(seconds) {
   if (seconds == null) return '';
-  if (seconds < 60)  return 'Cotización actualizada recién';
+  if (seconds < 60)  return t('rate_fresh');
   const min = Math.floor(seconds / 60);
-  return `Cotización actualizada hace ${min} min`;
+  return t('rate_ago', { min });
 }
 
 // Formatea "1 {from} = {value} {to}" con el locale/decimales de cada moneda,
@@ -608,7 +949,7 @@ function fmtAge(seconds) {
 function fmtRateLine(ru) {
   if (!ru) return '';
   const dec = { EUR: 2, ARS: 3, USD: 2 };   // decimales por moneda destino fiat
-  const n = ru.value.toLocaleString('es-AR', {
+  const n = ru.value.toLocaleString(locale(), {
     minimumFractionDigits: 0,
     maximumFractionDigits: ru.to in dec ? dec[ru.to] : 2,
   });
@@ -663,7 +1004,7 @@ function renderTotalDisplay() {
   base.classList.add('hidden');
   updateTodayLabel();
 
-  if (totalIsQuote) { setAmount(el, 'A cotizar'); return; }
+  if (totalIsQuote) { setAmount(el, t('to_quote')); return; }
 
   const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
   const currency = method ? (method.currency || 'USD') : 'USD';
@@ -679,7 +1020,7 @@ function renderTotalDisplay() {
 
   if (currency === 'CRYPTO' && !code) {
     // Aún no eligió token: invitamos a seleccionarlo antes de convertir.
-    setAmount(el, 'Elegí un token');
+    setAmount(el, t('choose_token'));
     return;
   }
 
@@ -714,7 +1055,7 @@ function renderProjectValue() {
   const el = document.getElementById('ps-project-value');
   if (!el) return;
   const base = selectedProd ? effectiveBase() : null;
-  el.textContent = base ? fmtCurrency('USD', base) : 'A cotizar';
+  el.textContent = base ? fmtCurrency('USD', base) : t('to_quote');
 }
 
 function updateMilestones() {
@@ -732,12 +1073,12 @@ function updateMilestones() {
   const anticipadoPct = (paymentMode === 'anticipado' && selectedProd.base_price != null)
     ? (selectedProd.discount_pct || 0) : 0;
   document.getElementById('discount-label').textContent =
-    selectedProd.discount_pct ? `${selectedProd.discount_pct}% de descuento` : 'Sin descuento adicional';
+    selectedProd.discount_pct ? t('discount_pct_fmt', { pct: selectedProd.discount_pct }) : t('discount_none');
 
   if (!base) {
     currentTotalUSD = 0; totalIsQuote = true; rateConversions = null;
     renderTotalDisplay();
-    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--muted);font-style:italic;">Ingresá el monto acordado para ver el detalle.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="color:var(--muted);font-style:italic;">${esc(t('enter_amount_hint'))}</td></tr>`;
     return;
   }
 
@@ -745,22 +1086,23 @@ function updateMilestones() {
   const afterMode = Math.round(base * (1 - anticipadoPct / 100));
   const total = appliedDiscount ? Math.round(appliedDiscount.final_price) : afterMode;
   const milestones = selectedProd.milestones || [];
+  const WHEN = milestoneWhen();
 
   if (paymentMode === 'hitos') {
     milestones.forEach((m, i) => {
       const amt = Math.round(total * m.pct / 100);
       const tr = document.createElement('tr');
       if (i === 0) tr.style.background = '#fff5f7';
-      tr.innerHTML = `<td>Hito ${i+1} — ${m.label}</td><td>${m.pct}%</td><td><strong>${fmtUSD(amt)}</strong></td><td>${MILESTONE_WHEN[i] || ''}</td>`;
+      tr.innerHTML = `<td>${esc(t('milestone_row', { n: i+1, label: m.label }))}</td><td>${m.pct}%</td><td><strong>${fmtUSD(amt)}</strong></td><td>${esc(WHEN[i] || '')}</td>`;
       tbody.appendChild(tr);
     });
     const tr = document.createElement('tr');
     tr.className = 'total-row';
-    tr.innerHTML = `<td colspan="2"><strong>TOTAL</strong></td><td colspan="2"><strong>${fmtUSD(total)}</strong></td>`;
+    tr.innerHTML = `<td colspan="2"><strong>${t('total')}</strong></td><td colspan="2"><strong>${fmtUSD(total)}</strong></td>`;
     tbody.appendChild(tr);
   } else {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>Pago único anticipado</td><td>100%</td><td style="color:var(--accent);font-weight:700;">${fmtUSD(total)}</td><td>Al firmar</td>`;
+    tr.innerHTML = `<td>${esc(t('upfront_single'))}</td><td>100%</td><td style="color:var(--accent);font-weight:700;">${fmtUSD(total)}</td><td>${esc(t('when_sign'))}</td>`;
     tbody.appendChild(tr);
   }
 
@@ -768,10 +1110,11 @@ function updateMilestones() {
   const saved = Math.round(base - total);
   if (saved > 0) {
     const parts = [];
-    if (anticipadoPct > 0) parts.push(`${anticipadoPct}% anticipado`);
-    if (appliedDiscount)   parts.push(`código ${appliedDiscount.code}`);
+    if (anticipadoPct > 0) parts.push(t('savings_ant', { pct: anticipadoPct }));
+    if (appliedDiscount)   parts.push(t('savings_code', { code: appliedDiscount.code }));
+    const detail = parts.length ? ` (${parts.join(' + ')})` : '';
     const tr2 = document.createElement('tr');
-    tr2.innerHTML = `<td colspan="4" style="color:var(--ok);font-size:12px;">Ahorrás ${fmtUSD(saved)} USD${parts.length ? ` (${parts.join(' + ')})` : ''}</td>`;
+    tr2.innerHTML = `<td colspan="4" style="color:var(--ok);font-size:12px;">${esc(t('savings_fmt', { amount: fmtUSD(saved).replace('$',''), detail }))}</td>`;
     tbody.appendChild(tr2);
   }
 
@@ -802,28 +1145,31 @@ async function applyDiscount() {
 
   if (!selectedProd) {
     msg.className = 'discount-msg err';
-    msg.textContent = 'Primero seleccioná un producto.';
+    msg.textContent = t('disc_select_product');
     msg.style.display = 'block';
     return;
   }
   const base = effectiveBase();
   if (!base) {
     msg.className = 'discount-msg err';
-    msg.textContent = 'Ingresá primero el monto acordado.';
+    msg.textContent = t('disc_enter_amount');
     msg.style.display = 'block';
     return;
   }
 
-  const params = new URLSearchParams({ code, product_code: selectedProd.code });
+  const params = new URLSearchParams({ code, product_code: selectedProd.code, lang: LANG });
   if (selectedProd.base_price == null) params.set('amount', base);
 
   try {
     const res  = await fetch(`${API_BASE}/api/discounts/validate?${params}`);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Código inválido.');
+    if (!res.ok) throw new Error(data.detail || t('disc_applied'));
     appliedDiscount = data;
     msg.className = 'discount-msg ok';
-    msg.textContent = `✓ ${data.description || 'Código aplicado'} — ahorrás $${Math.round(data.amount_saved).toLocaleString()} USD.`;
+    msg.textContent = t('disc_ok_fmt', {
+      desc: data.description || t('disc_applied'),
+      amount: Math.round(data.amount_saved).toLocaleString(),
+    });
     msg.style.display = 'block';
   } catch (err) {
     clearDiscount();
@@ -839,7 +1185,7 @@ async function applyDiscount() {
 // ═══════════════════════════════════════════════════════
 async function loadPaymentInfo() {
   try {
-    const res = await fetch(`${API_BASE}/api/payment-info`);
+    const res = await fetch(`${API_BASE}/api/payment-info?lang=${LANG}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     PAYMENT_METHODS = data.methods || [];
@@ -847,7 +1193,7 @@ async function loadPaymentInfo() {
   } catch (err) {
     console.error('[PaymentInfo] Load failed:', err);
     document.getElementById('pm-panels').innerHTML =
-      '<div class="alert warn">No se pudieron cargar los datos de pago. Te los enviaremos por email.</div>';
+      `<div class="alert warn">${esc(t('payinfo_load_err'))}</div>`;
   }
 }
 
@@ -859,13 +1205,17 @@ function esc(s) {
 function renderPaymentMethods() {
   const tabs   = document.getElementById('pm-tabs');
   const panels = document.getElementById('pm-panels');
+  const prevKey = selectedPayKey;
   tabs.innerHTML = '';
   panels.innerHTML = '';
   if (!PAYMENT_METHODS.length) return;
 
+  // Tras un cambio de idioma, conservar el método elegido si sigue existiendo.
+  const keepIdx = Math.max(0, PAYMENT_METHODS.findIndex(m => m.key === prevKey));
+
   PAYMENT_METHODS.forEach((m, i) => {
     const tab = document.createElement('div');
-    tab.className = 'pm-tab' + (i === 0 ? ' active' : '');
+    tab.className = 'pm-tab' + (i === keepIdx ? ' active' : '');
     tab.textContent = m.label;
     tab.onclick = () => switchPayTab(m.key);
     tabs.appendChild(tab);
@@ -882,7 +1232,7 @@ function renderPaymentMethods() {
       .filter(f => f.value)   // ocultar campos sin valor (ej. wallets vacías)
       .map(f => {
         const copyBtn = isCopyable(f.label)
-          ? `<button type="button" class="pm-copy" data-copy="${esc(f.value)}">Copiar</button>`
+          ? `<button type="button" class="pm-copy" data-copy="${esc(f.value)}">${esc(t('copy'))}</button>`
           : '';
         return `<div class="pm-field"><span class="pm-flabel">${esc(f.label)}</span>` +
                `<span class="pm-fval"><span>${esc(f.value)}</span>${copyBtn}</span></div>`;
@@ -892,10 +1242,10 @@ function renderPaymentMethods() {
       .map(n => `<div class="info-text" style="margin-top:6px;">${esc(n)}</div>`)
       .join('');
     const empty = rows ? '' :
-      (isCrypto ? '' : '<div class="info-text">Datos disponibles a pedido — te los enviaremos por email.</div>');
+      (isCrypto ? '' : `<div class="info-text">${esc(t('fields_on_request'))}</div>`);
 
     const panel = document.createElement('div');
-    panel.className = 'pm-panel' + (i === 0 ? ' visible' : '');
+    panel.className = 'pm-panel' + (i === keepIdx ? ' visible' : '');
     panel.id = 'tab-' + m.key;
     panel.innerHTML = (rows ? `<div class="pm-detail">${rows}</div>` : empty) + notes;
     panels.appendChild(panel);
@@ -908,10 +1258,9 @@ function renderPaymentMethods() {
     if (btn) copyText(btn.dataset.copy, btn);
   };
 
-  selectedPayKey = PAYMENT_METHODS[0].key;
-  // Ya puede haber un total calculado antes de cargar los métodos: refrescar.
-  if (rateConversions) renderTotalDisplay();
-  else refreshConversions();
+  selectedPayKey = PAYMENT_METHODS[keepIdx].key;
+  // Si el método activo es cripto, re-desplegar su selector de token/red.
+  switchPayTab(selectedPayKey);
 }
 
 function switchPayTab(key) {
@@ -926,7 +1275,11 @@ function switchPayTab(key) {
   const isCrypto = method && (method.currency || '') === 'CRYPTO';
   const selBox = document.getElementById('crypto-token-select');
   if (isCrypto) {
-    selectedToken = null; selectedNetwork = null;   // elección explícita
+    // Preservar token/red si siguen siendo válidos tras recargar (ej. idioma).
+    cryptoTokens = method.tokens || [];
+    if (!cryptoTokens.some(tk => tk.symbol === selectedToken)) {
+      selectedToken = null; selectedNetwork = null;
+    }
     renderCryptoTokens();
     renderCryptoNetworks();
     renderCryptoWallet();
@@ -947,13 +1300,13 @@ function renderCryptoTokens() {
   box.innerHTML = '';
   cryptoTokens.forEach(tok => {
     const sym = tok.symbol;
-    const t = document.createElement('div');
-    t.className = 'crypto-token-tab' + (sym === selectedToken ? ' active' : '');
-    t.dataset.token = sym;
+    const t2 = document.createElement('div');
+    t2.className = 'crypto-token-tab' + (sym === selectedToken ? ' active' : '');
+    t2.dataset.token = sym;
     const icon = TOKEN_ICONS[sym];
-    t.innerHTML = (icon ? `<span class="tok-icon">${icon}</span>` : '') + esc(sym);
-    t.onclick = () => selectToken(sym);
-    box.appendChild(t);
+    t2.innerHTML = (icon ? `<span class="tok-icon">${icon}</span>` : '') + esc(sym);
+    t2.onclick = () => selectToken(sym);
+    box.appendChild(t2);
   });
 }
 
@@ -963,7 +1316,7 @@ function selectToken(sym) {
     el.classList.toggle('active', el.dataset.token === sym));
 
   // Al elegir token, se ofrecen sus redes. Si hay una sola, se auto-selecciona.
-  const tok = cryptoTokens.find(t => t.symbol === sym);
+  const tok = cryptoTokens.find(tk => tk.symbol === sym);
   const nets = (tok && tok.networks) || [];
   selectedNetwork = nets.length === 1 ? nets[0] : null;
   renderCryptoNetworks();
@@ -976,17 +1329,17 @@ function renderCryptoNetworks() {
   const wrap = document.getElementById('crypto-network-select');
   const box  = document.getElementById('crypto-network-tabs');
   box.innerHTML = '';
-  const tok = cryptoTokens.find(t => t.symbol === selectedToken);
+  const tok = cryptoTokens.find(tk => tk.symbol === selectedToken);
   const nets = (tok && tok.networks) || [];
   if (!selectedToken || nets.length <= 1) { wrap.style.display = 'none'; return; }
 
   wrap.style.display = 'block';
   nets.forEach(net => {
-    const t = document.createElement('div');
-    t.className = 'crypto-network-tab' + (net === selectedNetwork ? ' active' : '');
-    t.textContent = net.name;
-    t.onclick = () => selectNetwork(net);
-    box.appendChild(t);
+    const t2 = document.createElement('div');
+    t2.className = 'crypto-network-tab' + (net === selectedNetwork ? ' active' : '');
+    t2.textContent = net.name;
+    t2.onclick = () => selectNetwork(net);
+    box.appendChild(t2);
   });
 }
 
@@ -1006,10 +1359,10 @@ function renderCryptoWallet() {
   box.style.display = 'block';
   box.innerHTML = `
     ${net.qr ? `<img class="cw-qr" src="${esc(net.qr)}" alt="QR ${esc(selectedToken)} — ${esc(net.name)}">` : ''}
-    <div class="cw-addr-label">Dirección ${esc(selectedToken)} — ${esc(net.name)}</div>
+    <div class="cw-addr-label">${esc(t('addr_label_fmt', { token: selectedToken, network: net.name }))}</div>
     <div class="cw-addr-row">
       <div class="cw-addr" id="cw-addr">${esc(net.address)}</div>
-      <button type="button" class="cw-copy" id="cw-copy">Copiar</button>
+      <button type="button" class="cw-copy" id="cw-copy">${esc(t('copy'))}</button>
     </div>
     ${net.warning ? `<div class="cw-warning">⚠️ <span>${esc(net.warning)}</span></div>` : ''}
   `;
@@ -1030,32 +1383,57 @@ async function copyText(text, btn) {
       document.body.appendChild(ta); ta.select();
       document.execCommand('copy'); document.body.removeChild(ta);
     }
-    btn.textContent = '✓ Copiado'; btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 1800);
+    btn.textContent = t('copied'); btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = t('copy'); btn.classList.remove('copied'); }, 1800);
   } catch (err) {
     console.error('[Copy] Failed:', err);
-    btn.textContent = 'Error';
-    setTimeout(() => { btn.textContent = 'Copiar'; }, 1800);
+    btn.textContent = t('copy_err');
+    setTimeout(() => { btn.textContent = t('copy'); }, 1800);
   }
 }
 
 // ═══════════════════════════════════════════════════════
-// NDA DYNAMIC FILLS
+// NDA CLAUSES + DYNAMIC FILLS
 // ═══════════════════════════════════════════════════════
+// Pinta las 12 cláusulas del NDA en el idioma activo. La cláusula 8 y la 11
+// tienen partes dinámicas (id para actualizarlas luego).
+function renderNdaClauses() {
+  const box = document.getElementById('nda-clauses');
+  if (!box) return;
+  const clauses = t('clauses');
+  box.innerHTML = clauses.map(([num, body, tail]) => {
+    if (num.startsWith('8.')) {
+      return `<div class="clause"><strong>${esc(num)}</strong> <span id="nda-pay-clause">${esc(body)}</span>${esc(tail || '')}</div>`;
+    }
+    if (num.startsWith('11.')) {
+      return `<div class="clause"><strong>${esc(num)}</strong> <strong id="nda-juris-fill" class="fill">${esc(t('nda_juris_ph'))}</strong>.</div>`;
+    }
+    return `<div class="clause"><strong>${esc(num)}</strong> ${esc(body)}${esc(tail || '')}</div>`;
+  }).join('');
+}
+
 function updateNdaFills() {
-  const name    = document.getElementById('client-name').value || '[Nombre del Cliente]';
-  const country = document.getElementById('client-country').value || '[Jurisdicción a definir]';
-  const today   = new Date().toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' });
-  document.getElementById('nda-client-fill').textContent = name;
-  document.getElementById('nda-date-fill').textContent   = today;
-  document.getElementById('nda-juris-fill').textContent  = country;
+  const name    = document.getElementById('client-name').value || t('nda_client_ph');
+  const country = document.getElementById('client-country').value || t('nda_juris_ph');
+  const today   = new Date().toLocaleDateString(locale(), { year: 'numeric', month: 'long', day: 'numeric' });
+  // Intro (celebrado entre proveedor y cliente, con fecha).
+  const intro = document.getElementById('nda-intro');
+  if (intro) {
+    intro.innerHTML = t('nda_intro_fmt', {
+      provider: `<strong>${esc(t('provider_name'))}</strong>`,
+      client:   `<strong id="nda-client-fill" class="fill">${esc(name)}</strong>`,
+      date:     `<strong id="nda-date-fill" class="fill">${esc(today)}</strong>`,
+    });
+  }
+  const juris = document.getElementById('nda-juris-fill');
+  if (juris) juris.textContent = country;
 }
 
 // Etiqueta legible del pago de hoy en la moneda elegida (incluye token/red de
 // cripto). Refleja exactamente lo que ve el cliente en el resumen de pago:
 // el primer hito en modo hitos, o el total en anticipado.
 function todayPaymentLabel() {
-  if (totalIsQuote) return 'A cotizar';
+  if (totalIsQuote) return t('to_quote');
   const todayUSD = todayAmountUSD();
   const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
   const currency = method ? (method.currency || 'USD') : 'USD';
@@ -1074,24 +1452,25 @@ function todayPaymentLabel() {
 // pago, token y red de cripto. Devuelve pares [etiqueta, valor].
 function collectAgreementDetails() {
   const rows = [];
+  const WHEN = milestoneWhen();
   const prodName = selectedProd
     ? (selectedProd.full_name ? `${selectedProd.name} — ${selectedProd.full_name}` : selectedProd.name)
     : '—';
-  rows.push(['Producto / Servicio', prodName]);
+  rows.push([t('ad_product'), prodName]);
 
   const customDesc = document.getElementById('custom-desc').value.trim();
   if (selectedProd && selectedProd.code === 'CUSTOM' && customDesc) {
-    rows.push(['Requerimiento', customDesc]);
+    rows.push([t('ad_requirement'), customDesc]);
   }
 
   const base = selectedProd ? effectiveBase() : null;
-  rows.push(['Valor del proyecto', base ? fmtCurrency('USD', base) : 'A cotizar']);
-  rows.push(['Modalidad de pago', paymentMode === 'hitos' ? 'Pago por hitos (3 cuotas)' : 'Pago único anticipado']);
+  rows.push([t('ad_project_value'), base ? fmtCurrency('USD', base) : t('to_quote')]);
+  rows.push([t('ad_payment_mode'), paymentMode === 'hitos' ? t('ad_mode_hitos') : t('ad_mode_upfront')]);
 
   if (appliedDiscount) {
-    rows.push(['Código de descuento', appliedDiscount.code]);
+    rows.push([t('ad_discount_code'), appliedDiscount.code]);
   }
-  rows.push(['Total acordado (USD)', totalIsQuote ? 'A cotizar' : fmtCurrency('USD', currentTotalUSD)]);
+  rows.push([t('ad_agreed_total'), totalIsQuote ? t('to_quote') : fmtCurrency('USD', currentTotalUSD)]);
 
   // Detalle de hitos (montos en USD, moneda operativa del acuerdo). Se indica
   // el momento de cada uno ("Al firmar", "Al avanzar", "Al finalizar") para
@@ -1099,21 +1478,21 @@ function collectAgreementDetails() {
   if (paymentMode === 'hitos' && selectedProd && !totalIsQuote) {
     (selectedProd.milestones || []).forEach((m, i) => {
       const amt  = Math.round(currentTotalUSD * m.pct / 100);
-      const when = MILESTONE_WHEN[i] || '';
-      rows.push([`Hito ${i + 1} — ${m.label} (${m.pct}%) · ${when}`, fmtUSD(amt) + ' USD']);
+      const when = WHEN[i] || '';
+      rows.push([t('ad_milestone_fmt', { n: i + 1, label: m.label, pct: m.pct, when }), fmtUSD(amt) + ' USD']);
     });
   }
 
   // Método y medio de pago elegido.
   const method = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
   if (method) {
-    rows.push(['Método de pago', method.label]);
+    rows.push([t('ad_method'), method.label]);
     const isCrypto = (method.currency || '') === 'CRYPTO';
     if (isCrypto) {
-      if (selectedToken)   rows.push(['Token', selectedToken]);
+      if (selectedToken)   rows.push([t('ad_token'), selectedToken]);
       if (selectedNetwork) {
-        rows.push(['Red', selectedNetwork.name]);
-        if (selectedNetwork.address) rows.push(['Dirección', selectedNetwork.address]);
+        rows.push([t('ad_network'), selectedNetwork.name]);
+        if (selectedNetwork.address) rows.push([t('ad_address'), selectedNetwork.address]);
       }
     } else {
       // Datos de la transferencia fiat (Alias, CVU, IBAN, cuenta…).
@@ -1124,8 +1503,8 @@ function collectAgreementDetails() {
   // Pago de hoy: en hitos, el primer hito (al firmar); en anticipado, el total.
   const first = ((selectedProd && selectedProd.milestones) || [])[0];
   const todayLabel = paymentMode === 'hitos'
-    ? (first ? `Pago de hoy — Hito 1 (${first.pct}%, al firmar)` : 'Pago de hoy (al firmar)')
-    : 'Pago de hoy (pago único, al firmar)';
+    ? (first ? t('ad_today_hitos_fmt', { pct: first.pct }) : t('ad_today_hitos'))
+    : t('ad_today_upfront');
   rows.push([todayLabel, todayPaymentLabel()]);
   return rows;
 }
@@ -1166,10 +1545,8 @@ function renderNdaDetails() {
   const clause = document.getElementById('nda-pay-clause');
   if (clause) {
     const method = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
-    const modeTxt = paymentMode === 'hitos'
-      ? 'El pago se realiza por hitos según el detalle anterior (40% al firmar, 30% en hito intermedio, 30% en entrega final).'
-      : 'El pago se realiza de forma anticipada en un único desembolso según el detalle anterior.';
-    const methodTxt = method ? ` Medio de pago acordado: ${method.label}.` : '';
+    const modeTxt = paymentMode === 'hitos' ? t('clause8_hitos') : t('clause8_upfront');
+    const methodTxt = method ? t('clause8_method_fmt', { method: method.label }) : '';
     clause.textContent = modeTxt + methodTxt;
   }
 }
@@ -1193,7 +1570,7 @@ function setFile(f) {
     uploadedFile = null;
     p.style.display = 'block';
     p.style.color = 'var(--err)';
-    p.innerHTML = `&#10007; Formato no permitido. Aceptados: PDF, JPG, PNG.`;
+    p.innerHTML = t('file_bad_format');
     updateNdaGate();
     return;
   }
@@ -1201,7 +1578,7 @@ function setFile(f) {
     uploadedFile = null;
     p.style.display = 'block';
     p.style.color = 'var(--err)';
-    p.innerHTML = `&#10007; El archivo supera los 10 MB.`;
+    p.innerHTML = t('file_too_big');
     updateNdaGate();
     return;
   }
@@ -1273,13 +1650,13 @@ function getSignatureDataURL() {
   }
   const txt = document.getElementById('typed-sig-input').value.trim();
   if (!txt) return null;
-  const c = document.createElement('canvas');
-  c.width=500; c.height=100;
-  const x=c.getContext('2d');
+  const cc = document.createElement('canvas');
+  cc.width=500; cc.height=100;
+  const x=cc.getContext('2d');
   x.fillStyle='white'; x.fillRect(0,0,500,100);
   x.fillStyle='#1A1A2E'; x.font="italic 52px Georgia,serif";
   x.textBaseline='middle'; x.fillText(txt,20,55);
-  return c.toDataURL('image/png');
+  return cc.toDataURL('image/png');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1291,26 +1668,26 @@ async function submitForm() {
 
   // Client-side validation
   const errs = [];
-  if (!document.getElementById('client-name').value.trim())  errs.push('Nombre obligatorio.');
-  if (!document.getElementById('client-email').value.trim()) errs.push('Email obligatorio.');
+  if (!document.getElementById('client-name').value.trim())  errs.push(t('v_name'));
+  if (!document.getElementById('client-email').value.trim()) errs.push(t('v_email'));
   if (!selectedProd) {
-    errs.push('Seleccioná un producto.');
+    errs.push(t('v_product'));
     document.getElementById('product-error').style.display = 'block';
   }
   // Productos sin precio de catálogo (CUSTOM / a cotizar) exigen monto manual.
   if (selectedProd && selectedProd.base_price == null && !customAmount) {
-    errs.push('Ingresá el monto acordado.');
+    errs.push(t('v_amount'));
   }
   const sigData = getSignatureDataURL();
   if (!sigData) {
-    errs.push('Agregá tu firma.');
+    errs.push(t('v_sig'));
     document.getElementById('sig-error').style.display = 'block';
   } else {
     document.getElementById('sig-error').style.display = 'none';
   }
-  if (!uploadedFile) errs.push('Cargá el comprobante de pago (paso 3).');
-  if (!document.getElementById('agree-nda').checked)     errs.push('Debés aceptar el NDA.');
-  if (!document.getElementById('agree-payment').checked) errs.push('Debés confirmar las condiciones de pago.');
+  if (!uploadedFile) errs.push(t('v_receipt'));
+  if (!document.getElementById('agree-nda').checked)     errs.push(t('v_agree_nda'));
+  if (!document.getElementById('agree-payment').checked) errs.push(t('v_agree_pay'));
 
   if (errs.length) {
     errDiv.textContent = errs.join(' ');
@@ -1323,7 +1700,7 @@ async function submitForm() {
   const btn   = document.getElementById('submit-btn');
   const label = document.getElementById('submit-label');
   btn.disabled = true;
-  label.innerHTML = '<span class="spinner"></span> Enviando...';
+  label.innerHTML = `<span class="spinner"></span> ${esc(t('sending'))}`;
 
   try {
     // 1 ── POST engagement (NDA + firma)
@@ -1344,6 +1721,7 @@ async function submitForm() {
       signature_data:      sigData,
       user_agent:          navigator.userAgent,
       payment_details:     collectPaymentDetails(),
+      lang:                LANG,
     };
 
     const res = await fetch(`${API_BASE}/api/engagements`, {
@@ -1369,7 +1747,7 @@ async function submitForm() {
 
     // 2 ── Upload receipt if provided
     if (uploadedFile && engagementId) {
-      label.innerHTML = '<span class="spinner"></span> Subiendo comprobante...';
+      label.innerHTML = `<span class="spinner"></span> ${esc(t('uploading'))}`;
       const fd = new FormData();
       fd.append('file', uploadedFile);
       fd.append('milestone_n', '1');
@@ -1392,10 +1770,10 @@ async function submitForm() {
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : JSON.stringify(err);
-    errDiv.textContent = `Error al enviar: ${msg}. Intentá de nuevo o descargá la vista previa local.`;
+    errDiv.textContent = t('submit_error_fmt', { msg });
     errDiv.style.display = 'block';
     btn.disabled = false;
-    label.innerHTML = '&#10003; Firmar y enviar NDA';
+    label.innerHTML = `&#10003; ${esc(t('btn_submit'))}`;
   }
 }
 
@@ -1417,23 +1795,23 @@ function generateLocalPdf(sigDataUrl) {
   doc.setFontSize(13); doc.setTextColor(255,255,255);
   doc.text('NON-DISCLOSURE & ENGAGEMENT AGREEMENT', W/2,20,{align:'center'});
   doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(180,180,220);
-  doc.text('Copia local — el PDF oficial fue enviado por email', W/2,27,{align:'center'});
+  doc.text(t('pdf_local_note'), W/2,27,{align:'center'});
 
   y=42;
-  const name    = document.getElementById('client-name').value || 'N/D';
-  const email   = document.getElementById('client-email').value || 'N/D';
+  const name    = document.getElementById('client-name').value || t('pdf_na');
+  const email   = document.getElementById('client-email').value || t('pdf_na');
   const company = document.getElementById('client-company').value || '';
-  const country = document.getElementById('client-country').value || 'N/D';
-  const today   = new Date().toLocaleDateString('es-AR',{year:'numeric',month:'long',day:'numeric'});
+  const country = document.getElementById('client-country').value || t('pdf_na');
+  const today   = new Date().toLocaleDateString(locale(),{year:'numeric',month:'long',day:'numeric'});
 
   // Detalles del acuerdo: identidad del cliente + todos los detalles de
   // producto, pago, método, token y red (los mismos que muestra el NDA).
   const fields = [
-    ['Cliente', name + (company ? ` — ${company}` : '')],
-    ['Email', email],
-    ['País', country],
+    [t('pdf_client'), name + (company ? ` — ${company}` : '')],
+    [t('pdf_email'), email],
+    [t('pdf_country'), country],
     ...collectAgreementDetails(),
-    ['Fecha de firma', today],
+    [t('pdf_sign_date'), today],
   ];
 
   const boxH = fields.length * 5.5 + 3;
@@ -1448,30 +1826,19 @@ function generateLocalPdf(sigDataUrl) {
   y+=boxH+8;
   if(y>250){doc.addPage();y=18;}
   doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(26,26,46);
-  doc.text('NON-DISCLOSURE & ENGAGEMENT AGREEMENT',W/2,y,{align:'center'});
+  doc.text(t('pdf_agreement_title'),W/2,y,{align:'center'});
   y+=6;
 
-  const clauses=[
-    ['1. Objeto.','Evaluación, desarrollo e implementación de sistemas de datos, APIs y/o código según la propuesta aceptada.'],
-    ['2. Información Confidencial.','Incluye datasets, bases de código, infraestructura, credenciales e información de negocio compartida entre las partes.'],
-    ['3. Obligaciones.','Uso exclusivo para los fines del proyecto. Prohibida toda divulgación. Aplicar medidas razonables de protección.'],
-    ['4. Acceso & Seguridad.','Acceso de solo lectura cuando sea posible. Sin evasión de seguridad. Las vulnerabilidades serán reportadas.'],
-    ['5. Exclusiones.','Información pública, conocimiento previo, desarrollo independiente o divulgación legal obligatoria.'],
-    ['6. Vigencia.','Válido por 2 años. La confidencialidad persiste tras la terminación del acuerdo.'],
-    ['7. Manejo de Datos.','Usados únicamente durante el proyecto. Eliminados bajo solicitud. Sin retención innecesaria.'],
-    ['8. Condiciones de Pago.','40% al firmar, 30% en hito intermedio, 30% en entrega final. El trabajo comienza después del pago inicial.'],
-    ['9. Sin Transferencia de PI.','No se transfieren derechos de propiedad intelectual salvo acuerdo escrito adicional.'],
-    ['10. Limitación de Responsabilidad.','Sin responsabilidad por daños indirectos o consecuentes.'],
-    ['11. Ley Aplicable.',country],
-    ['12. Aceptación.','Este acuerdo es válido mediante firma digital. La ejecución del pago inicial implica aceptación total.'],
-  ];
-  clauses.forEach(([num,text])=>{
+  // Cláusulas fijas (localizadas) + la 11 (ley aplicable) con la jurisdicción.
+  const clauses = t('pdf_clauses').slice();
+  clauses.splice(10, 0, [t('pdf_clause11'), country]);
+  clauses.forEach(([num,text2])=>{
     if(y>240){doc.addPage();y=18;}
     doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(26,26,46);
     const nw=doc.getTextWidth(num);
     doc.text(num,M,y);
     doc.setFont('helvetica','normal'); doc.setTextColor(60,60,80);
-    const lines=doc.splitTextToSize(text,W-M*2-nw-2);
+    const lines=doc.splitTextToSize(text2,W-M*2-nw-2);
     doc.text(lines,M+nw+2,y);
     y+=lines.length*4.5+3;
   });
@@ -1480,7 +1847,7 @@ function generateLocalPdf(sigDataUrl) {
   if(y>240){doc.addPage();y=18;}
   doc.setDrawColor(220,224,236); doc.line(M,y,W-M,y); y+=6;
   doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(26,26,46);
-  doc.text('Firma Digital del Cliente',M,y);
+  doc.text(t('pdf_sig_title'),M,y);
 
   if(sigDataUrl){
     try{
@@ -1490,14 +1857,14 @@ function generateLocalPdf(sigDataUrl) {
   } else {y+=20;}
 
   doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(100,100,130);
-  doc.text(`Firmado por: ${name}`,M,y); y+=5;
-  doc.text(`Email: ${email}`,M,y); y+=5;
-  doc.text(`Fecha y hora: ${new Date().toLocaleString('es-AR')}`,M,y);
-  if(engagementId){ y+=5; doc.text(`Referencia: ${engagementId.slice(-16).toUpperCase()}`,M,y); }
+  doc.text(t('pdf_signed_by', { name }),M,y); y+=5;
+  doc.text(t('pdf_email_line', { email }),M,y); y+=5;
+  doc.text(t('pdf_datetime', { dt: new Date().toLocaleString(locale()) }),M,y);
+  if(engagementId){ y+=5; doc.text(t('pdf_ref', { ref: engagementId.slice(-16).toUpperCase() }),M,y); }
 
   doc.setFillColor(26,26,46); doc.rect(0,287,W,10,'F');
   doc.setFontSize(7); doc.setTextColor(120,120,160);
-  doc.text('Confidencial — Agraound Consulting / AETHERYON Systems — agraound.com',W/2,293,{align:'center'});
+  doc.text(t('pdf_footer'),W/2,293,{align:'center'});
 
   return doc.output('blob');
 }

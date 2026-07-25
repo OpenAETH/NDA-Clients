@@ -19,6 +19,7 @@ API backend para gestión de contratos NDA, engagements de clientes y pagos por 
 | Email | Resend |
 | PDF | ReportLab |
 | Cotizaciones | Coinbase + CoinGecko (cripto) · open.er-api (fiat) — keyless, con caché |
+| Idiomas | Bilingüe **inglés (por defecto) / español** — datos, API, PDF, email y frontend |
 | Deploy | Render (Web Service + disco persistente) |
 
 ---
@@ -80,7 +81,7 @@ static/
 
 ## Flujo principal
 
-El formulario (`static/index.html`) tiene **5 pasos**:
+El formulario (`static/index.html`) tiene un **toggle de idioma EN/ES** en el header (inglés por defecto, ver [Idiomas (i18n)](#idiomas-i18n)) y **5 pasos**:
 
 1. **Datos del cliente**
 2. **Selección de producto / servicio**
@@ -194,14 +195,16 @@ Detalle completo en [`DEPLOY.md`](DEPLOY.md).
 ### Productos y datos de pago
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET | `/api/products` | Listar productos activos |
-| GET | `/api/products/{code}` | Detalle de un producto |
+| GET | `/api/products?lang=en\|es` | Listar productos activos (localizados) |
+| GET | `/api/products/{code}?lang=en\|es` | Detalle de un producto (localizado) |
 | POST | `/api/products` | Crear producto (admin) |
 | PUT | `/api/products/{code}` | Actualizar producto (admin) |
 | DELETE | `/api/products/{code}` | Desactivar producto (soft-delete) |
-| GET | `/api/payment-info` | Datos de pago habilitados |
-| GET | `/api/discounts/validate` | Validar código y previsualizar precio |
+| GET | `/api/payment-info?lang=en\|es` | Datos de pago habilitados (localizados) |
+| GET | `/api/discounts/validate?…&lang=en\|es` | Validar código y previsualizar precio (localizado) |
 | GET | `/api/rates?amount=` | Convertir un monto USD a EUR/ARS/cripto (solo visualización) |
+
+> **`lang`** acepta `en` (por defecto) o `es`. Devuelve los textos del catálogo en ese idioma; los datos neutros (precios, alias, IBAN, direcciones cripto) no cambian. Ver [Idiomas (i18n)](#idiomas-i18n).
 
 ### Engagements
 | Método | Ruta | Descripción |
@@ -230,6 +233,8 @@ Detalle completo en [`DEPLOY.md`](DEPLOY.md).
 
 Para métodos fiat, `token/network/address` van en `null` y los datos de la transferencia (Alias, CVU, IBAN…) llegan en `fields: [{label, value}]`.
 
+`POST /api/engagements` también acepta **`lang`** (`"en"` por defecto, o `"es"`): determina el idioma del **PDF firmado** y del **email al cliente**. El frontend lo envía según el toggle activo. Ver [Idiomas (i18n)](#idiomas-i18n).
+
 ### Pagos
 | Método | Ruta | Descripción |
 |---|---|---|
@@ -248,6 +253,8 @@ Todo el catálogo es estático y editable a mano (sin base de datos). Editás el
 - **Datos de pago** → `data/payment_info.json` (ARS, USD, EUR, cripto). Cada método es una pestaña del formulario; `enabled: false` lo oculta. Los métodos fiat usan `fields` (los campos sin `value` no se muestran); el método cripto usa `tokens → networks` con QR, dirección y advertencia por red (ver [Wallets cripto](#wallets-cripto-token--red--qr--dirección)).
 - **Códigos de descuento** → `data/discount_codes.json` (ver abajo).
 
+> **Textos bilingües:** los campos traducibles del catálogo se guardan como objetos `{"en": "…", "es": "…"}` y la API los devuelve ya resueltos según `?lang=`. Los datos neutros (precios, alias, IBAN, direcciones, QR, nombres de red) se dejan como valor plano. Ver [Idiomas (i18n)](#idiomas-i18n).
+
 ### Códigos de descuento
 
 Se agregan/editan en `data/discount_codes.json`. Cada código:
@@ -257,7 +264,10 @@ Se agregan/editan en `data/discount_codes.json`. Cada código:
   "code": "LANZAMIENTO15",
   "type": "percent",          // "percent" (% sobre el precio) o "fixed" (USD a restar)
   "value": 15,
-  "description": "15% de descuento de lanzamiento",
+  "description": {            // texto bilingüe (se devuelve según ?lang=)
+    "en": "15% launch discount",
+    "es": "15% de descuento de lanzamiento"
+  },
   "products": [],             // [] o ausente = todos; ["DAE"] = solo ese producto
   "enabled": true,            // false lo desactiva
   "expires_at": null          // fecha ISO "YYYY-MM-DD" o null (sin vencimiento)
@@ -314,14 +324,19 @@ Estructura de cada token en `payment_info.json`:
   "symbol": "ETH",
   "networks": [
     {
-      "name": "Optimism (L2 de Ethereum)",
+      "name": "Optimism (Ethereum L2)",
       "address": "0x2e3c…",
       "qr": "assets/1000001298.jpg",
-      "warning": "Enviá únicamente ETH mediante la red Optimism (L2 de Ethereum). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+      "warning": {
+        "en": "Send ETH only via the Optimism (Ethereum L2) network. Using the wrong network may result in loss of funds.",
+        "es": "Enviá únicamente ETH mediante la red Optimism (L2 de Ethereum). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+      }
     }
   ]
 }
 ```
+
+> `name`, `address` y `qr` son neutros al idioma; solo `warning` es bilingüe (`{en, es}`).
 
 > **Agregar un token/red:** sumá el objeto a `tokens[].networks` en `payment_info.json` (con `address`, `qr` y `warning`) y dejá la imagen QR en `static/assets/`. El frontend arma el selector y el bloque de wallet solo. Para que además aparezca su conversión, el símbolo debe existir en el backend (`CRYPTO_IDS` o `STABLECOINS`).
 
@@ -348,6 +363,31 @@ Estructura de cada token en `payment_info.json`:
 ```
 
 > **Extensible:** para agregar una moneda fiat, sumá su símbolo a `FIAT_SYMBOLS`; para una cripto, a `CRYPTO_IDS` (con su id de CoinGecko). El frontend la formatea automáticamente vía `CURRENCY_FMT`.
+
+---
+
+## Idiomas (i18n)
+
+La aplicación es **bilingüe**: **inglés por defecto** y **español** opcional, seleccionable con un toggle **EN/ES** en el header del formulario. La preferencia se guarda en `localStorage` (`nda_lang`). El idioma atraviesa las cinco capas:
+
+| Capa | Cómo se traduce |
+|---|---|
+| **Datos** (`data/*.json`) | Los campos traducibles se guardan como `{"en": "…", "es": "…"}`. Los neutros (precios, alias, CVU/IBAN, direcciones, QR, nombres de red, símbolos de token) quedan como valor plano. |
+| **API** | `store.localize(value, lang)` colapsa recursivamente los objetos `{en,es}` al idioma pedido. Los endpoints `products`, `payment-info` y `discounts/validate` aceptan `?lang=en\|es`. |
+| **PDF** | `pdf_service.py` tiene un diccionario `PDF_STRINGS[lang]` para el texto fijo (cláusulas, encabezados, "cuándo" de cada hito); el contenido dinámico llega ya localizado desde el router. |
+| **Email** | El email **al cliente** (`CLIENT_EMAIL_STRINGS`) sale en su idioma. El aviso interno **al proveedor** queda en español (panel interno). |
+| **Frontend** | Diccionario `I18N` con `en`/`es` (a paridad de claves), helper `t(key, vars)` con interpolación `{var}`, atributos `data-i18n` / `data-i18n-ph`. Al cambiar de idioma se re-consultan catálogo y datos de pago con el nuevo `?lang=`, preservando la selección del usuario. |
+
+**Fallback:** `localize()` usa `en → es → cualquier idioma disponible`; `t()` cae a inglés y luego a la propia clave. `normalize_lang()` acepta variantes como `en-US` (toma el prefijo) y desconocidos caen al default.
+
+**Coherencia legal:** el `lang` enviado en `POST /api/engagements` fija el idioma del **PDF firmado** y del **email al cliente**, de modo que el documento que el cliente firma y recibe está íntegramente en el idioma que eligió. Los montos y la moneda operativa (USD) no cambian con el idioma.
+
+**Agregar/editar textos:**
+- Catálogo → editá el objeto `{en, es}` correspondiente en `data/*.json`.
+- Textos de UI del frontend → editá `I18N.en` **y** `I18N.es` en `static/index.html` (mantené las mismas claves en ambos).
+- Textos del PDF/email → `PDF_STRINGS` en `pdf_service.py` y `CLIENT_EMAIL_STRINGS` en `email_service.py`.
+
+**Agregar un idioma nuevo:** sumá el código a `SUPPORTED_LANGS` en `store.py`, añadí la clave en cada objeto `{en, es, …}` de los JSON, y un bloque nuevo en `I18N`, `PDF_STRINGS` y `CLIENT_EMAIL_STRINGS`.
 
 ---
 

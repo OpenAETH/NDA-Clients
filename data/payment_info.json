@@ -1,53 +1,53 @@
 {
-  "note": "Datos de pago editables. Agregá, quitá o modificá métodos y campos sin tocar el código. Cada método aparece como una pestaña en el formulario.",
+  "note": "Editable payment data. Add, remove or change methods and fields without touching code. Translatable strings use {\"en\": ..., \"es\": ...}; plain strings (values, addresses, network names) are language-neutral. Each method appears as a tab in the form.",
   "methods": [
     {
       "key": "ars",
-      "label": "Transferencia ARS",
+      "label": { "en": "ARS transfer", "es": "Transferencia ARS" },
       "currency": "ARS",
       "enabled": true,
       "fields": [
-        { "label": "Alias", "value": "Agraound.LEMON" },
-        { "label": "CVU", "value": "0000168300000004203016" }
+        { "label": { "en": "Alias", "es": "Alias" }, "value": "Agraound.LEMON" },
+        { "label": { "en": "CVU", "es": "CVU" }, "value": "0000168300000004203016" }
       ],
       "notes": []
     },
     {
       "key": "usd",
-      "label": "Transferencia USD",
+      "label": { "en": "USD transfer", "es": "Transferencia USD" },
       "currency": "USD",
       "enabled": true,
       "fields": [
-        { "label": "Nombre", "value": "Guido Gomez" },
-        { "label": "Banco", "value": "Lead Bank" },
-        { "label": "Routing number", "value": "101019644" },
-        { "label": "Account number", "value": "210953960839" },
-        { "label": "Tipo de cuenta", "value": "Checking" },
-        { "label": "Dirección", "value": "1801 Main St., Kansas City, MO 64108" }
+        { "label": { "en": "Name", "es": "Nombre" }, "value": "Guido Gomez" },
+        { "label": { "en": "Bank", "es": "Banco" }, "value": "Lead Bank" },
+        { "label": { "en": "Routing number", "es": "Routing number" }, "value": "101019644" },
+        { "label": { "en": "Account number", "es": "Account number" }, "value": "210953960839" },
+        { "label": { "en": "Account type", "es": "Tipo de cuenta" }, "value": "Checking" },
+        { "label": { "en": "Address", "es": "Dirección" }, "value": "1801 Main St., Kansas City, MO 64108" }
       ],
       "notes": [
-        "Se reciben USDt: 1 USD = 1 USDt.",
-        "Comisión: ACH 1,5% — WIRE 1,5% + 12 USD (se traslada el costo al producto).",
-        "Acreditación: 1 a 3 días hábiles."
+        { "en": "USDt accepted: 1 USD = 1 USDt.", "es": "Se reciben USDt: 1 USD = 1 USDt." },
+        { "en": "Fee: ACH 1.5% — WIRE 1.5% + USD 12 (cost passed on to the product).", "es": "Comisión: ACH 1,5% — WIRE 1,5% + 12 USD (se traslada el costo al producto)." },
+        { "en": "Settlement: 1 to 3 business days.", "es": "Acreditación: 1 a 3 días hábiles." }
       ]
     },
     {
       "key": "eur",
-      "label": "Transferencia EUR",
+      "label": { "en": "EUR transfer", "es": "Transferencia EUR" },
       "currency": "EUR",
       "enabled": true,
       "fields": [
-        { "label": "Nombre", "value": "Guido Gomez" },
-        { "label": "Tipo de cuenta", "value": "Business" },
-        { "label": "País", "value": "Malta" },
-        { "label": "IBAN", "value": "MT64CFTE28004000000000006494900" },
-        { "label": "Tipo de transferencia", "value": "SEPA" }
+        { "label": { "en": "Name", "es": "Nombre" }, "value": "Guido Gomez" },
+        { "label": { "en": "Account type", "es": "Tipo de cuenta" }, "value": "Business" },
+        { "label": { "en": "Country", "es": "País" }, "value": "Malta" },
+        { "label": { "en": "IBAN", "es": "IBAN" }, "value": "MT64CFTE28004000000000006494900" },
+        { "label": { "en": "Transfer type", "es": "Tipo de transferencia" }, "value": "SEPA" }
       ],
       "notes": []
     },
     {
       "key": "crypto",
-      "label": "Cripto",
+      "label": { "en": "Crypto", "es": "Cripto" },
       "currency": "CRYPTO",
       "enabled": true,
       "tokens": [
@@ -58,7 +58,10 @@
               "name": "BNB Chain (BEP20)",
               "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
               "qr": "assets/1000001292.jpg",
-              "warning": "Enviá únicamente BTC mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              "warning": {
+                "en": "Send BTC only via the BNB Chain (BEP20) network. Using the wrong network may result in loss of funds.",
+                "es": "Enviá únicamente BTC mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              }
             }
           ]
         },
@@ -69,13 +72,19 @@
               "name": "BNB Chain (BEP20)",
               "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
               "qr": "assets/1000001292.jpg",
-              "warning": "Enviá únicamente ETH mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              "warning": {
+                "en": "Send ETH only via the BNB Chain (BEP20) network. Using the wrong network may result in loss of funds.",
+                "es": "Enviá únicamente ETH mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              }
             },
             {
-              "name": "Optimism (L2 de Ethereum)",
+              "name": "Optimism (Ethereum L2)",
               "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
               "qr": "assets/1000001298.jpg",
-              "warning": "Enviá únicamente ETH mediante la red Optimism (L2 de Ethereum). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              "warning": {
+                "en": "Send ETH only via the Optimism (Ethereum L2) network. Using the wrong network may result in loss of funds.",
+                "es": "Enviá únicamente ETH mediante la red Optimism (L2 de Ethereum). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              }
             }
           ]
         },
@@ -86,13 +95,19 @@
               "name": "BNB Chain (BEP20)",
               "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
               "qr": "assets/1000001292.jpg",
-              "warning": "Enviá únicamente USDT mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              "warning": {
+                "en": "Send USDT only via the BNB Chain (BEP20) network. Using the wrong network may result in loss of funds.",
+                "es": "Enviá únicamente USDT mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              }
             },
             {
               "name": "Tron (TRC20)",
               "address": "THH5PJjCSQGeBgULuo4kDBhnzTaUmAhK3K",
               "qr": "assets/1000001294.jpg",
-              "warning": "Enviá únicamente USDT mediante la red Tron (TRC20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              "warning": {
+                "en": "Send USDT only via the Tron (TRC20) network. Using the wrong network may result in loss of funds.",
+                "es": "Enviá únicamente USDT mediante la red Tron (TRC20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              }
             }
           ]
         },
@@ -103,19 +118,25 @@
               "name": "BNB Chain (BEP20)",
               "address": "0x2e3c21999770B1bdADeF0C415FCB668103FFD6D5",
               "qr": "assets/1000001292.jpg",
-              "warning": "Enviá únicamente USDC mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              "warning": {
+                "en": "Send USDC only via the BNB Chain (BEP20) network. Using the wrong network may result in loss of funds.",
+                "es": "Enviá únicamente USDC mediante la red BNB Chain (BEP20). El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              }
             },
             {
               "name": "Solana",
               "address": "EFqvdcF5Sfvm561rXRjFYkFNp4EStrN4aAGZduRfbmz1",
               "qr": "assets/1000001296.jpg",
-              "warning": "Enviá únicamente USDC mediante la red Solana. El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              "warning": {
+                "en": "Send USDC only via the Solana network. Using the wrong network may result in loss of funds.",
+                "es": "Enviá únicamente USDC mediante la red Solana. El uso de una red incorrecta puede provocar la pérdida de los fondos."
+              }
             }
           ]
         }
       ],
       "notes": [
-        "Verificá siempre la red antes de enviar. USDT/USDC: 1 USD = 1 USDt/USDc."
+        { "en": "Always verify the network before sending. USDT/USDC: 1 USD = 1 USDt/USDc.", "es": "Verificá siempre la red antes de enviar. USDT/USDC: 1 USD = 1 USDt/USDc." }
       ]
     }
   ]

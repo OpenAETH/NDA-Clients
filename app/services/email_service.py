@@ -24,19 +24,62 @@ async def _send(payload: dict) -> bool:
         return True
 
 
+# Textos del email al cliente, por idioma. El email interno al proveedor
+# queda en español (panel interno).
+CLIENT_EMAIL_STRINGS = {
+    "en": {
+        "heading":     "Your NDA has been signed",
+        "greeting":    "Hi",
+        "intro":       "Attached you'll find your signed <strong>Non-Disclosure &amp; Engagement Agreement</strong> for the <strong>{product}</strong> service.",
+        "ref":         "Agreement ref.",
+        "product":     "Product",
+        "total":       "Agreed total",
+        "to_quote":    "To be quoted",
+        "mode":        "Mode",
+        "mode_hitos":  "Milestone payment",
+        "mode_anticipado": "Single upfront payment",
+        "next_step_label": "Next step:",
+        "next_step":   "To activate the project, send the initial payment receipt to <a href=\"mailto:{to}\" style=\"color:#7a4f00;\">{to}</a> or upload it from the form.",
+        "auto":        "This email is generated automatically. The attached NDA is valid as a signed digital document.",
+        "footer":      "Agraound Consulting / AETHERYON Systems — Confidential",
+        "subject":     "NDA signed — {product} · Ref {ref}",
+    },
+    "es": {
+        "heading":     "Tu NDA ha sido firmado",
+        "greeting":    "Hola",
+        "intro":       "Adjunto encontrás tu <strong>Non-Disclosure &amp; Engagement Agreement</strong> firmado correspondiente al servicio <strong>{product}</strong>.",
+        "ref":         "Ref. de acuerdo",
+        "product":     "Producto",
+        "total":       "Total acordado",
+        "to_quote":    "A cotizar",
+        "mode":        "Modalidad",
+        "mode_hitos":  "Pago por hitos",
+        "mode_anticipado": "Pago único anticipado",
+        "next_step_label": "Próximo paso:",
+        "next_step":   "Para activar el proyecto, enviá el comprobante del pago inicial al email <a href=\"mailto:{to}\" style=\"color:#7a4f00;\">{to}</a> o subilo desde el formulario.",
+        "auto":        "Este email es generado automáticamente. El NDA adjunto es válido como documento digital firmado.",
+        "footer":      "Agraound Consulting / AETHERYON Systems — Confidential",
+        "subject":     "NDA firmado — {product} · Ref {ref}",
+    },
+}
+
+
 async def send_nda_to_client(
     client_name: str,
     client_email: str,
     product_name: str,
-    total_amount: str,
+    total_amount: Optional[str],
     payment_mode: str,
     pdf_bytes: bytes,
     engagement_id: str,
+    lang: str = "en",
 ) -> bool:
-    """Send signed NDA PDF to the client."""
+    """Send signed NDA PDF to the client, in the client's language."""
 
+    T = CLIENT_EMAIL_STRINGS.get(lang, CLIENT_EMAIL_STRINGS["en"])
     pdf_b64 = base64.b64encode(pdf_bytes).decode()
-    mode_label = "pago por hitos" if payment_mode == "hitos" else "pago único anticipado"
+    mode_label = T["mode_hitos"] if payment_mode == "hitos" else T["mode_anticipado"]
+    total_str = f"{total_amount} USD" if total_amount else T["to_quote"]
 
     html_body = f"""
     <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
@@ -44,46 +87,43 @@ async def send_nda_to_client(
         <p style="color:#aaaacc;font-size:11px;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.1em;">
           Agraound Consulting / AETHERYON Systems
         </p>
-        <h1 style="color:#ffffff;font-size:20px;margin:0;">Tu NDA ha sido firmado</h1>
+        <h1 style="color:#ffffff;font-size:20px;margin:0;">{T["heading"]}</h1>
       </div>
       <div style="background:#f5f6fa;padding:28px 32px;">
-        <p style="color:#444;margin:0 0 16px;">Hola <strong>{client_name}</strong>,</p>
+        <p style="color:#444;margin:0 0 16px;">{T["greeting"]} <strong>{client_name}</strong>,</p>
         <p style="color:#444;margin:0 0 16px;">
-          Adjunto encontrás tu <strong>Non-Disclosure &amp; Engagement Agreement</strong> firmado
-          correspondiente al servicio <strong>{product_name}</strong>.
+          {T["intro"].format(product=product_name)}
         </p>
         <table style="width:100%;border-collapse:collapse;margin:0 0 20px;font-size:13px;">
           <tr style="background:#e0e3ec;">
-            <td style="padding:8px 12px;font-weight:600;color:#1A1A2E;">Ref. de acuerdo</td>
+            <td style="padding:8px 12px;font-weight:600;color:#1A1A2E;">{T["ref"]}</td>
             <td style="padding:8px 12px;font-family:monospace;">{engagement_id}</td>
           </tr>
           <tr style="background:#eef0f8;">
-            <td style="padding:8px 12px;font-weight:600;color:#1A1A2E;">Producto</td>
+            <td style="padding:8px 12px;font-weight:600;color:#1A1A2E;">{T["product"]}</td>
             <td style="padding:8px 12px;">{product_name}</td>
           </tr>
           <tr style="background:#e0e3ec;">
-            <td style="padding:8px 12px;font-weight:600;color:#1A1A2E;">Total acordado</td>
-            <td style="padding:8px 12px;color:#E94560;font-weight:700;">{total_amount} USD</td>
+            <td style="padding:8px 12px;font-weight:600;color:#1A1A2E;">{T["total"]}</td>
+            <td style="padding:8px 12px;color:#E94560;font-weight:700;">{total_str}</td>
           </tr>
           <tr style="background:#eef0f8;">
-            <td style="padding:8px 12px;font-weight:600;color:#1A1A2E;">Modalidad</td>
-            <td style="padding:8px 12px;">{mode_label.capitalize()}</td>
+            <td style="padding:8px 12px;font-weight:600;color:#1A1A2E;">{T["mode"]}</td>
+            <td style="padding:8px 12px;">{mode_label}</td>
           </tr>
         </table>
         <div style="background:#fff3cd;border-left:4px solid #f5a623;padding:12px 16px;border-radius:4px;margin-bottom:20px;">
           <p style="margin:0;font-size:13px;color:#7a4f00;">
-            <strong>Próximo paso:</strong> Para activar el proyecto, enviá el comprobante del pago
-            inicial al email <a href="mailto:{settings.EMAIL_PROVIDER_TO}" style="color:#7a4f00;">{settings.EMAIL_PROVIDER_TO}</a>
-            o subilo desde el formulario.
+            <strong>{T["next_step_label"]}</strong> {T["next_step"].format(to=settings.EMAIL_PROVIDER_TO)}
           </p>
         </div>
         <p style="color:#888;font-size:12px;margin:0;">
-          Este email es generado automáticamente. El NDA adjunto es válido como documento digital firmado.
+          {T["auto"]}
         </p>
       </div>
       <div style="background:#1A1A2E;padding:14px 32px;border-radius:0 0 8px 8px;text-align:center;">
         <p style="color:#666;font-size:11px;margin:0;">
-          Agraound Consulting / AETHERYON Systems — Confidential
+          {T["footer"]}
         </p>
       </div>
     </div>
@@ -92,7 +132,7 @@ async def send_nda_to_client(
     return await _send({
         "from": f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM}>",
         "to": [client_email],
-        "subject": f"NDA firmado — {product_name} · Ref {engagement_id[:8].upper()}",
+        "subject": T["subject"].format(product=product_name, ref=engagement_id[:8].upper()),
         "html": html_body,
         "attachments": [
             {

@@ -1,11 +1,11 @@
 {
-  "note": "Códigos de descuento editables a mano. 'type': 'percent' (pct sobre el precio) o 'fixed' (monto en USD a restar). 'products': lista de códigos de producto a los que aplica ([] o ausente = todos, incluido CUSTOM). 'enabled': false lo desactiva. 'expires_at': ISO date o null.",
+  "note": "Editable discount codes. 'type': 'percent' (pct off the price) or 'fixed' (USD amount to subtract). 'products': list of product codes it applies to ([] or absent = all, including CUSTOM). 'enabled': false disables it. 'expires_at': ISO date or null. 'description' is translatable: {\"en\": ..., \"es\": ...}.",
   "codes": [
     {
       "code": "LANZAMIENTO15",
       "type": "percent",
       "value": 15,
-      "description": "15% de descuento de lanzamiento",
+      "description": { "en": "15% launch discount", "es": "15% de descuento de lanzamiento" },
       "products": [],
       "enabled": true,
       "expires_at": null
@@ -14,7 +14,7 @@
       "code": "DAE500",
       "type": "fixed",
       "value": 500,
-      "description": "USD 500 off en Data Audit & Evaluation",
+      "description": { "en": "USD 500 off Data Audit & Evaluation", "es": "USD 500 off en Data Audit & Evaluation" },
       "products": ["DAE"],
       "enabled": true,
       "expires_at": null
@@ -23,7 +23,7 @@
       "code": "ALIADO2026",
       "type": "percent",
       "value": 10,
-      "description": "10% para clientes referidos",
+      "description": { "en": "10% for referred clients", "es": "10% para clientes referidos" },
       "products": [],
       "enabled": true,
       "expires_at": "2026-12-31"

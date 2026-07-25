@@ -28,6 +28,11 @@ async def create_engagement(payload: EngagementCreate, request: Request):
     if not product:
         raise HTTPException(404, f"Product '{payload.product_code}' not found or inactive")
 
+    # Localizar el producto al idioma del cliente: el PDF, el email y el
+    # registro guardan los textos (nombre, milestones) en ese idioma.
+    lang = store.normalize_lang(payload.lang)
+    product = store.localize(product, lang)
+
     # ── Precio (siempre calculado en el servidor) ────────────────
     # 1. Precio base: del catálogo, o el monto manual ingresado por el
     #    cliente (obligatorio para CUSTOM o productos "a cotizar").
@@ -57,7 +62,7 @@ async def create_engagement(payload: EngagementCreate, request: Request):
     final_price = price_after_mode
     if payload.discount_code and payload.discount_code.strip():
         try:
-            disc = discounts.resolve_code(payload.discount_code, payload.product_code)
+            disc = discounts.resolve_code(payload.discount_code, payload.product_code, lang=lang)
         except discounts.DiscountError as e:
             raise HTTPException(422, f"Código de descuento inválido: {e}")
         final_price = discounts.apply_discount(price_after_mode, disc)
@@ -174,6 +179,7 @@ async def create_engagement(payload: EngagementCreate, request: Request):
             signed_at=signed_at,
             custom_description=payload.custom_description,
             payment_details=payload.payment_details.model_dump() if payload.payment_details else None,
+            lang=lang,
         )
 
         # ── Send emails ───────────────────────────────────────────
@@ -181,10 +187,11 @@ async def create_engagement(payload: EngagementCreate, request: Request):
             client_name=payload.client.full_name,
             client_email=payload.client.email,
             product_name=product.get("full_name") or product.get("name"),
-            total_amount=f"${final_price:,.2f}" if final_price else "A cotizar",
+            total_amount=f"${final_price:,.2f}" if final_price else None,
             payment_mode=payload.payment_mode,
             pdf_bytes=pdf_bytes,
             engagement_id=engagement_id,
+            lang=lang,
         )
 
         await send_provider_notification(
