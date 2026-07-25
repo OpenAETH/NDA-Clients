@@ -1,5 +1,23 @@
 [
   {
+    "id": "prod-sab",
+    "code": "SAB",
+    "name": "SAB",
+    "full_name": "Strategic AI Blueprint",
+    "description": "Evaluación estratégica de capacidades de IA y arquitectura de datos para identificar oportunidades, riesgos y definir un roadmap de implementación.",
+    "base_price": 15000.0,
+    "discount_pct": 0,
+    "badge_label": "Recomendado",
+    "badge_type": "featured",
+    "is_active": true,
+    "sort_order": 1,
+    "milestones": [
+      { "milestone_n": 1, "label": "Inicio + firma NDA", "pct": 40 },
+      { "milestone_n": 2, "label": "Evaluación AI + Arquitectura de Datos", "pct": 30 },
+      { "milestone_n": 3, "label": "Blueprint estratégico + Roadmap", "pct": 30 }
+    ]
+  },
+  {
     "id": "prod-dae",
     "code": "DAE",
     "name": "DAE",
@@ -13,7 +31,7 @@
     "badge_label": { "en": "Standard", "es": "Estándar" },
     "badge_type": "std",
     "is_active": true,
-    "sort_order": 1,
+    "sort_order": 2,
     "milestones": [
       { "milestone_n": 1, "label": { "en": "Kickoff + NDA signature", "es": "Inicio + firma NDA" }, "pct": 40 },
       { "milestone_n": 2, "label": { "en": "Partial report delivery", "es": "Entrega de informe parcial" }, "pct": 30 },
@@ -34,7 +52,7 @@
     "badge_label": { "en": "Premium", "es": "Premium" },
     "badge_type": "prem",
     "is_active": true,
-    "sort_order": 2,
+    "sort_order": 3,
     "milestones": [
       { "milestone_n": 1, "label": { "en": "Kickoff + NDA signature", "es": "Inicio + firma NDA" }, "pct": 40 },
       { "milestone_n": 2, "label": { "en": "API live (milestone 2)", "es": "API operativa (hito 2)" }, "pct": 30 },
@@ -55,7 +73,7 @@
     "badge_label": { "en": "Tailored", "es": "A medida" },
     "badge_type": "custom",
     "is_active": true,
-    "sort_order": 3,
+    "sort_order": 4,
     "milestones": [
       { "milestone_n": 1, "label": { "en": "Kickoff + NDA signature", "es": "Inicio + firma NDA" }, "pct": 40 },
       { "milestone_n": 2, "label": { "en": "Intermediate milestone", "es": "Hito intermedio" }, "pct": 30 },
