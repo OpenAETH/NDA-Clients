@@ -4,17 +4,23 @@
     "code": "SAB",
     "name": "SAB",
     "full_name": "Strategic AI Blueprint",
-    "description": "Evaluación estratégica de capacidades de IA y arquitectura de datos para identificar oportunidades, riesgos y definir un roadmap de implementación.",
+    "description": {
+      "en": "Strategic assessment of AI capabilities and data architecture to identify opportunities, risks, and define an implementation roadmap.",
+      "es": "Evaluación estratégica de capacidades de IA y arquitectura de datos para identificar oportunidades, riesgos y definir un roadmap de implementación."
+    },
     "base_price": 15000.0,
     "discount_pct": 0,
-    "badge_label": "Recomendado",
+    "badge_label": {
+      "en": "Recommended",
+      "es": "Recomendado"
+    },
     "badge_type": "featured",
     "is_active": true,
     "sort_order": 1,
     "milestones": [
-      { "milestone_n": 1, "label": "Inicio + firma NDA", "pct": 40 },
-      { "milestone_n": 2, "label": "Evaluación AI + Arquitectura de Datos", "pct": 30 },
-      { "milestone_n": 3, "label": "Blueprint estratégico + Roadmap", "pct": 30 }
+      { "milestone_n": 1, "label": { "en": "Kickoff + NDA signature", "es": "Inicio + firma NDA" }, "pct": 40 },
+      { "milestone_n": 2, "label": { "en": "AI assessment + Data Architecture", "es": "Evaluación AI + Arquitectura de Datos" }, "pct": 30 },
+      { "milestone_n": 3, "label": { "en": "Strategic Blueprint + Roadmap", "es": "Blueprint estratégico + Roadmap" }, "pct": 30 }
     ]
   },
   {
