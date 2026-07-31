@@ -86,7 +86,7 @@ El formulario (`static/index.html`) tiene un **toggle de idioma EN/ES** en el he
 1. **Datos del cliente**
 2. **Selección de producto / servicio**
 3. **Activación del proyecto** — modalidad de pago (hitos/anticipado), método de pago (ARS/USD/EUR/cripto) con datos copiables, resumen de pago (valor del proyecto vs. pago de hoy) y **carga del comprobante**.
-4. **Firma del NDA** — el documento incluye **todos los detalles del acuerdo** (producto, montos por hito con su "cuándo", método y medio de pago, token/red de cripto) + la firma digital, integrados en un mismo paso.
+4. **Firma del NDA** — el documento incluye **todos los detalles del acuerdo** (producto, montos por hito con su "cuándo", método y medio de pago, token/red de cripto y, si se paga con un activo volátil, la cotización fijada) + la firma digital, integrados en un mismo paso.
 5. **Aceptar y enviar**
 
 > **El comprobante es obligatorio y habilita la firma:** el botón "Continuar a la firma del NDA" queda deshabilitado hasta cargar un archivo válido (validación de tipo/tamaño en el cliente, espejo del backend). La subida real al backend ocurre en el envío, con el `engagement_id` devuelto.
@@ -102,15 +102,17 @@ POST /api/engagements
   │ 1. Resuelve producto del catálogo (JSON)│
   │ 2. Calcula precio: base/monto manual +  │
   │    código de descuento (re-validado)   │
-  │ 3. Upsert cliente (JSON, file-lock)    │
-  │ 4. Crea engagement + pagos (JSON)      │
-  │    (guarda payment_details elegido)    │
-  │ 5. Registra la venta en Mongo (opcional)│
-  │ 6. Genera PDF del NDA (con detalles     │
+  │ 3. Fija cotización cripto si aplica     │
+  │    (BTC/ETH: tasa del servidor)        │
+  │ 4. Upsert cliente (JSON, file-lock)    │
+  │ 5. Crea engagement + pagos (JSON)      │
+  │    (guarda payment_details + lock)     │
+  │ 6. Registra la venta en Mongo (opcional)│
+  │ 7. Genera PDF del NDA (con detalles     │
   │    del acuerdo + medio de pago)        │
-  │ 7. Envía PDF al cliente (email)        │
-  │ 8. Notifica al proveedor               │
-  │ 9. Sube PDF a Cloudflare R2            │
+  │ 8. Envía PDF al cliente (email)        │
+  │ 9. Notifica al proveedor               │
+  │10. Sube PDF a Cloudflare R2            │
   └───────────────────────────────────────┘
         ↓
 Cliente sube comprobante de pago
@@ -233,6 +235,8 @@ Detalle completo en [`DEPLOY.md`](DEPLOY.md).
 
 Para métodos fiat, `token/network/address` van en `null` y los datos de la transferencia (Alias, CVU, IBAN…) llegan en `fields: [{label, value}]`.
 
+Si el `token` es **BTC o ETH**, el backend agrega además un **`crypto_lock`** al engagement con los hitos denominados en ese activo a la cotización de la firma — ver [Fijación de cotización cripto](#fijación-de-cotización-cripto-btceth). El cliente no envía ese dato: se calcula en el servidor.
+
 `POST /api/engagements` también acepta **`lang`** (`"en"` por defecto, o `"es"`): determina el idioma del **PDF firmado** y del **email al cliente**. El frontend lo envía según el toggle activo. Ver [Idiomas (i18n)](#idiomas-i18n).
 
 ### Pagos
@@ -249,7 +253,7 @@ Para métodos fiat, `token/network/address` van en `null` y los datos de la tran
 
 Todo el catálogo es estático y editable a mano (sin base de datos). Editás el archivo, commiteás y redeployás:
 
-- **Productos** → `data/products.json` (código, precio, descuento por anticipado, hitos, badge).
+- **Productos** → `data/products.json` (código, precio, descuento por anticipado, hitos, badge). Ojo con `discount_pct`: se acumula con los códigos de descuento (ver abajo).
 - **Datos de pago** → `data/payment_info.json` (ARS, USD, EUR, cripto). Cada método es una pestaña del formulario; `enabled: false` lo oculta. Los métodos fiat usan `fields` (los campos sin `value` no se muestran); el método cripto usa `tokens → networks` con QR, dirección y advertencia por red (ver [Wallets cripto](#wallets-cripto-token--red--qr--dirección)).
 - **Códigos de descuento** → `data/discount_codes.json` (ver abajo).
 
@@ -276,15 +280,32 @@ Se agregan/editan en `data/discount_codes.json`. Cada código:
 
 El cliente ingresa el código en el formulario; `GET /api/discounts/validate` lo verifica y muestra el precio actualizado en vivo. **El descuento se re-valida y re-calcula siempre en el servidor al contratar** — el precio que envía el frontend nunca se toma como fuente de verdad.
 
+**Los descuentos se acumulan en cascada.** Si el producto tiene `discount_pct` (descuento por pago anticipado) y además se aplica un código, el orden es: `base → −discount_pct → −código`. El efectivo resultante es mayor que cualquiera de los dos por separado; p. ej. `discount_pct: 10` + código del 55% sobre USD 8.000 da USD 3.240 (59,5%), no USD 3.600. Si querés que el código sea el único descuento, dejá `discount_pct: 0` en el producto.
+
+**Códigos activos:**
+
+| Código | Tipo | Productos | Vence |
+|---|---|---|---|
+| `AETH-AuditLandings` | 55% | todos | — |
+| `LANZAMIENTO15` | 15% | todos | — |
+| `ALIADO2026` | 10% | todos | 2026-12-31 |
+| `DAE500` | USD 500 | DAE | — |
+
+> `AETH-AuditLandings` es el código publicado en las landings premium de CAE/DAE/SAB (repo `Portal`), donde el precio de lista aparece tachado junto al precio con descuento. **Si cambiás su valor o lo deshabilitás, actualizá también esas tres landings** — si no, el cliente llega al checkout con un precio distinto al que se le prometió. Los tres productos tienen `discount_pct: 0`, así que el código rinde exactamente 55% en ambas modalidades de pago.
+
+La resolución es **case-insensitive**: el código se normaliza a mayúsculas antes de buscarlo, así que `aeth-auditlandings` también entra.
+
 ### Monto manual (CUSTOM y productos "a cotizar")
 
 Los productos sin `base_price` (p. ej. `CUSTOM`) piden un **monto acordado** en el formulario. Ese importe (`agreed_price`) se usa como precio base y admite código de descuento encima. El backend rechaza (`422`) contratar este tipo de producto sin un monto válido (`> 0`).
 
 ---
 
-## Conversión de moneda (solo visualización)
+## Conversión de moneda
 
-El total del formulario se calcula **siempre en USD** (moneda base). La conversión a otras monedas es únicamente informativa: se muestra el equivalente según el método de pago que el cliente elija, sin alterar el precio operativo ni lo que se guarda o se firma en el PDF (que quedan en USD).
+El total del formulario se calcula **siempre en USD** (moneda base). Para fiat y stablecoins la conversión es únicamente informativa: se muestra el equivalente según el método de pago elegido, sin alterar el precio operativo ni lo que se guarda o se firma.
+
+**Excepción — activos volátiles (BTC/ETH):** cuando el cliente paga con uno de estos, los montos por hito **se fijan en el token** a la cotización de la firma y esa denominación forma parte del acuerdo. Ver [Fijación de cotización cripto](#fijación-de-cotización-cripto-btceth).
 
 **Cómo funciona:**
 
@@ -295,6 +316,8 @@ El total del formulario se calcula **siempre en USD** (moneda base). La conversi
    - **USDT/USDC** → stablecoins ancladas 1:1 al USD; no se consultan.
 3. Las tasas se **cachean 5 min** en memoria. Ante fallo de un proveedor se reutiliza el último valor válido (y se marca `stale`), de modo que el pago nunca se bloquea por FX.
 4. El frontend actualiza el **resumen de pago** (`div.pay-summary`) en vivo: valor del proyecto, pago de hoy convertido, referencia en USD, la cotización usada (`1 BTC = 63.100,13 USD`) y la antigüedad del dato (`Cotización actualizada hace 2 min`).
+
+**Valor del proyecto con descuento:** cuando hay un descuento aplicado (código, modalidad anticipada o ambos), el **valor del proyecto** muestra el precio de lista **tachado** junto al precio efectivo y el porcentaje: `~~USD 15.000,00~~ USD 6.750,00 (−55%)`. Sin descuento muestra solo el precio. Esto evita la incoherencia de anunciar el precio de lista mientras los hitos se calculan sobre el precio con descuento.
 
 **Pago de hoy vs. total:** el resumen separa el **valor del proyecto** (total, siempre en USD) del **pago de hoy** (lo que se abona al firmar). En modo **hitos**, el pago de hoy es el **primer hito** (p. ej. 40% "Al firmar"), y el NDA detalla los hitos restantes con su momento (30% "Al avanzar", 30% "Al finalizar") sin ambigüedad. En modo **anticipado**, el pago de hoy es el total. La conversión a la moneda elegida se escala linealmente desde la conversión cacheada del total (la conversión es `monto × tasa`), sin re-consultar el API.
 
@@ -364,6 +387,47 @@ Estructura de cada token en `payment_info.json`:
 
 > **Extensible:** para agregar una moneda fiat, sumá su símbolo a `FIAT_SYMBOLS`; para una cripto, a `CRYPTO_IDS` (con su id de CoinGecko). El frontend la formatea automáticamente vía `CURRENCY_FMT`.
 
+### Fijación de cotización cripto (BTC/ETH)
+
+Cuando el cliente elige pagar con un **activo volátil**, los tres hitos quedan **denominados en el token** a la cotización del momento de la firma. El monto en token pasa a ser la obligación del acuerdo: las variaciones de mercado posteriores las absorbe quien se benefició del movimiento.
+
+> **Regla pactada:** si el token sube, el costo del cliente medido en USD resulta menor; si baja, el proveedor absorbe la diferencia. Ambas partes la aceptan al firmar (cláusula 8).
+
+**Alcance:** solo **BTC** y **ETH** (`VOLATILE_TOKENS` en `engagements.py`). **USDT y USDC** están ancladas 1:1 al USD, así que no se fijan: sus hitos quedan expresados en USD como cualquier método fiat.
+
+**Cómo funciona:**
+
+1. Al recibir `POST /api/engagements` con `payment_details.currency == "CRYPTO"` y un token volátil, el backend **vuelve a pedir la cotización al servidor** (`rates_service.convert(final_price)`).
+2. Construye un objeto `crypto_lock` con el total en token, la tasa usada, el timestamp y el monto de cada hito.
+3. El lock se **persiste en el engagement** y se pasa al PDF, que imprime cada hito en token con su equivalente USD de referencia, la tasa empleada y la cláusula 8 extendida.
+
+```json
+"crypto_lock": {
+  "token": "BTC",
+  "usd_per_token": 118500.0,        // 1 BTC = X USD al firmar
+  "total": 0.05696203,
+  "locked_at": "2026-07-31T20:14:03Z",
+  "milestones": [
+    { "milestone_n": 1, "pct": 40, "amount": 0.02278481 },
+    { "milestone_n": 2, "pct": 30, "amount": 0.01708861 },
+    { "milestone_n": 3, "pct": 30, "amount": 0.01708861 }
+  ]
+}
+```
+
+Así queda la tabla del PDF firmado:
+
+| Hito | % | Cuándo | Monto (BTC) |
+|---|---|---|---|
+| Kickoff + NDA | 40% | Al firmar | `0.022785 BTC ($2,700.00)` |
+| Entrega parcial | 30% | Al avanzar | `0.017089 BTC ($2,025.00)` |
+| Entrega final | 30% | Al finalizar | `0.017089 BTC ($2,025.00)` |
+| **TOTAL** | | | **`0.056962 BTC ($6,750.00)`** |
+
+> **La tasa la fija el servidor, nunca el cliente.** El navegador muestra una previsualización, pero el lock que se firma se calcula en el backend al momento de contratar — si se tomara el valor enviado por el frontend, un cliente podría fijar los hitos a una cotización arbitraria.
+
+> **Degradación:** si el proveedor de FX falla al firmar, el lock se omite (se registra en log) y el acuerdo continúa **en USD**. Una caída de FX nunca bloquea una firma.
+
 ---
 
 ## Idiomas (i18n)
@@ -374,7 +438,7 @@ La aplicación es **bilingüe**: **inglés por defecto** y **español** opcional
 |---|---|
 | **Datos** (`data/*.json`) | Los campos traducibles se guardan como `{"en": "…", "es": "…"}`. Los neutros (precios, alias, CVU/IBAN, direcciones, QR, nombres de red, símbolos de token) quedan como valor plano. |
 | **API** | `store.localize(value, lang)` colapsa recursivamente los objetos `{en,es}` al idioma pedido. Los endpoints `products`, `payment-info` y `discounts/validate` aceptan `?lang=en\|es`. |
-| **PDF** | `pdf_service.py` tiene un diccionario `PDF_STRINGS[lang]` para el texto fijo (cláusulas, encabezados, "cuándo" de cada hito); el contenido dinámico llega ya localizado desde el router. |
+| **PDF** | `pdf_service.py` tiene un diccionario `PDF_STRINGS[lang]` para el texto fijo (cláusulas, encabezados, "cuándo" de cada hito, cláusula cripto); el contenido dinámico llega ya localizado desde el router. |
 | **Email** | El email **al cliente** (`CLIENT_EMAIL_STRINGS`) sale en su idioma. El aviso interno **al proveedor** queda en español (panel interno). |
 | **Frontend** | Diccionario `I18N` con `en`/`es` (a paridad de claves), helper `t(key, vars)` con interpolación `{var}`, atributos `data-i18n` / `data-i18n-ph`. Al cambiar de idioma se re-consultan catálogo y datos de pago con el nuevo `?lang=`, preservando la selección del usuario. |
 
@@ -399,7 +463,7 @@ La aplicación es **bilingüe**: **inglés por defecto** y **español** opcional
 | `payment_info.json` | `data/` (repo) | Datos de transferencia y cripto |
 | `discount_codes.json` | `data/` (repo) | Códigos de descuento (% o fijo) |
 | `clients.json` | `TX_DATA_DIR` | Datos de clientes (upsert por email) |
-| `engagements.json` | `TX_DATA_DIR` | Contratos firmados + metadata NDA |
+| `engagements.json` | `TX_DATA_DIR` | Contratos firmados + metadata NDA (incl. `crypto_lock`) |
 | `payments.json` | `TX_DATA_DIR` | Hitos de pago por engagement |
 | `sales` (Mongo) | MongoDB | Registro consultable de ventas (opcional) |
 
