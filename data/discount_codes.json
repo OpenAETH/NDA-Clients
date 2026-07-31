@@ -27,6 +27,15 @@
       "products": [],
       "enabled": true,
       "expires_at": "2026-12-31"
+    },
+        {
+      "code": "AETH-AuditLandings",
+      "type": "percent",
+      "value": 55,
+      "description": { "en": "55% Audit & Evaluation discount", "es": "55% de descuento en Audit & Evaluation" },
+      "products": [],
+      "enabled": true,
+      "expires_at": null
     }
   ]
 }
