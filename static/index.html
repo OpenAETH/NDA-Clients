@@ -97,6 +97,9 @@
   .pay-summary .ps-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
   .pay-summary .ps-project { padding-bottom: 0.7rem; margin-bottom: 0.7rem; border-bottom: 1px solid rgba(255,255,255,0.15); }
   .pay-summary .ps-project .ps-value { font-size: 16px; font-weight: 600; }
+  /* Precio de lista tachado + % off, cuando hay descuento aplicado. */
+  .pay-summary .ps-was { text-decoration: line-through; opacity: 0.55; font-weight: 400; margin-right: 2px; }
+  .pay-summary .ps-off { font-size: 11px; font-weight: 600; opacity: 0.9; white-space: nowrap; }
   .pay-summary .ps-label { font-size: 12px; opacity: 0.7; }
   .pay-summary .ps-sub { font-size: 11px; opacity: 0.55; margin-top: 2px; }
   .td-label { font-size: 12px; opacity: 0.7; }
@@ -508,6 +511,7 @@ const I18N = {
     choose_token: "Choose a token",
     when_sign: "On signing", when_progress: "On progress", when_final: "On completion",
     discount_pct_fmt: "{pct}% discount", discount_none: "No additional discount",
+    ps_off_fmt: "(−{pct}%)",
     enter_amount_hint: "Enter the agreed amount to see the breakdown.",
     milestone_row: "Milestone {n} — {label}",
     total: "TOTAL",
@@ -532,6 +536,7 @@ const I18N = {
     ad_discount_code: "Discount code", ad_agreed_total: "Agreed total (USD)",
     ad_milestone_fmt: "Milestone {n} — {label} ({pct}%) · {when}",
     ad_method: "Payment method", ad_token: "Token", ad_network: "Network", ad_address: "Address",
+    ad_rate: "Rate used", ad_rate_at: "fixed on signing date",
     ad_today_hitos_fmt: "Today's payment — Milestone 1 ({pct}%, on signing)",
     ad_today_hitos: "Today's payment (on signing)",
     ad_today_upfront: "Today's payment (single payment, on signing)",
@@ -553,6 +558,7 @@ const I18N = {
     clause8_hitos: "The payment is made by milestones per the breakdown above (40% on signing, 30% at intermediate milestone, 30% on final delivery).",
     clause8_upfront: "The payment is made upfront in a single disbursement per the breakdown above.",
     clause8_method_fmt: " Agreed payment method: {method}.",
+    clause8_crypto_fmt: " Milestone amounts are denominated in {token} at the rate shown above, fixed on the signing date. Each milestone is settled for the stated {token} amount regardless of its market value at the time of payment: if {token} appreciates, the Client's cost in USD terms is lower; if it depreciates, the Provider bears the difference. Both parties accept this market risk.",
     // Upload / validation
     file_bad_format: "&#10007; Format not allowed. Accepted: PDF, JPG, PNG.",
     file_too_big: "&#10007; The file exceeds 10 MB.",
@@ -647,6 +653,7 @@ const I18N = {
     choose_token: "Elegí un token",
     when_sign: "Al firmar", when_progress: "Al avanzar", when_final: "Al finalizar",
     discount_pct_fmt: "{pct}% de descuento", discount_none: "Sin descuento adicional",
+    ps_off_fmt: "(−{pct}%)",
     enter_amount_hint: "Ingresá el monto acordado para ver el detalle.",
     milestone_row: "Hito {n} — {label}",
     total: "TOTAL",
@@ -670,6 +677,7 @@ const I18N = {
     ad_discount_code: "Código de descuento", ad_agreed_total: "Total acordado (USD)",
     ad_milestone_fmt: "Hito {n} — {label} ({pct}%) · {when}",
     ad_method: "Método de pago", ad_token: "Token", ad_network: "Red", ad_address: "Dirección",
+    ad_rate: "Cotización usada", ad_rate_at: "fijada a la fecha de firma",
     ad_today_hitos_fmt: "Pago de hoy — Hito 1 ({pct}%, al firmar)",
     ad_today_hitos: "Pago de hoy (al firmar)",
     ad_today_upfront: "Pago de hoy (pago único, al firmar)",
@@ -690,6 +698,7 @@ const I18N = {
     clause8_hitos: "El pago se realiza por hitos según el detalle anterior (40% al firmar, 30% en hito intermedio, 30% en entrega final).",
     clause8_upfront: "El pago se realiza de forma anticipada en un único desembolso según el detalle anterior.",
     clause8_method_fmt: " Medio de pago acordado: {method}.",
+    clause8_crypto_fmt: " Los montos de cada hito quedan denominados en {token} a la cotización indicada arriba, fijada a la fecha de firma. Cada hito se cancela por el monto en {token} establecido, con independencia de su valor de mercado al momento del pago: si {token} sube, el costo del Cliente medido en USD resulta menor; si baja, el Proveedor absorbe la diferencia. Ambas partes aceptan este riesgo de mercado.",
     file_bad_format: "&#10007; Formato no permitido. Aceptados: PDF, JPG, PNG.",
     file_too_big: "&#10007; El archivo supera los 10 MB.",
     v_name: "Nombre obligatorio.", v_email: "Email obligatorio.",
@@ -984,6 +993,33 @@ function conversionFor(code) {
   return (rateConversions.CRYPTO || {})[code];
 }
 
+// Símbolo de la moneda/activo elegido para pagar ('BTC', 'ARS', 'USD'…), o
+// null si eligió cripto pero todavía no seleccionó el token.
+function selectedCurrencyCode() {
+  const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
+  const currency = method ? (method.currency || 'USD') : 'USD';
+  return currency === 'CRYPTO' ? (selectedToken || null) : currency;
+}
+
+// Convierte un monto USD a la moneda/activo elegido, escalando linealmente la
+// conversión cacheada (que corresponde a currentTotalUSD). Devuelve undefined
+// si no hay cotización disponible.
+function convertFromUSD(usdAmount) {
+  const code = selectedCurrencyCode();
+  if (!code) return undefined;
+  const totalConv = conversionFor(code);
+  if (totalConv == null || !currentTotalUSD) return undefined;
+  return totalConv * usdAmount / currentTotalUSD;
+}
+
+// ¿El cliente paga con un activo cripto volátil? Las stablecoins están
+// ancladas 1:1 al USD, así que no hay riesgo de mercado que fijar.
+const VOLATILE_TOKENS = ['BTC', 'ETH'];
+function payingWithVolatileToken() {
+  const code = selectedCurrencyCode();
+  return !!code && VOLATILE_TOKENS.includes(code);
+}
+
 // Aplica el texto al importe principal con una animación sutil si cambió.
 function setAmount(el, text) {
   if (el.textContent === text) return;   // sin cambio → sin animación
@@ -1026,10 +1062,7 @@ function renderTotalDisplay() {
 
   // Las conversiones se cachean para currentTotalUSD; como la conversión es
   // lineal (monto × tasa), escalamos al monto de hoy sin re-consultar el API.
-  const totalConv = conversionFor(code);
-  const value = (totalConv != null && currentTotalUSD)
-    ? totalConv * todayUSD / currentTotalUSD
-    : null;
+  const value = convertFromUSD(todayUSD) ?? null;
   const shown = value != null ? code : 'USD';
   setAmount(el, value != null ? fmtCurrency(code, value)
                               : fmtCurrency('USD', todayUSD));
@@ -1049,21 +1082,34 @@ function renderTotalDisplay() {
   renderNdaDetails();
 }
 
-// Valor total del proyecto (precio base), siempre en USD. Independiente de
-// la modalidad, el descuento y el método de pago elegidos.
+// Valor total del proyecto, siempre en USD. Muestra el precio de lista; si
+// hay un descuento aplicado (código y/o modalidad anticipada), el precio de
+// lista queda tachado junto al precio efectivo, para que el cliente vea de
+// dónde sale el total que va a pagar.
 function renderProjectValue() {
   const el = document.getElementById('ps-project-value');
   if (!el) return;
   const base = selectedProd ? effectiveBase() : null;
-  el.textContent = base ? fmtCurrency('USD', base) : t('to_quote');
+  if (!base) { el.textContent = t('to_quote'); return; }
+
+  const net = currentTotalUSD;
+  if (!totalIsQuote && net && Math.round(net) < Math.round(base)) {
+    const pct = Math.round((1 - net / base) * 100);
+    el.innerHTML =
+      `<span class="ps-was">${esc(fmtCurrency('USD', base))}</span> ` +
+      `${esc(fmtCurrency('USD', net))} ` +
+      `<span class="ps-off">${esc(t('ps_off_fmt', { pct }))}</span>`;
+  } else {
+    el.textContent = fmtCurrency('USD', base);
+  }
 }
 
 function updateMilestones() {
   const tbody = document.getElementById('milestone-body');
   tbody.innerHTML = '';
-  renderProjectValue();
   if (!selectedProd) {
     currentTotalUSD = 0; totalIsQuote = false; rateConversions = null;
+    renderProjectValue();
     renderTotalDisplay();
     return;
   }
@@ -1077,6 +1123,7 @@ function updateMilestones() {
 
   if (!base) {
     currentTotalUSD = 0; totalIsQuote = true; rateConversions = null;
+    renderProjectValue();
     renderTotalDisplay();
     tbody.innerHTML = `<tr><td colspan="4" style="color:var(--muted);font-style:italic;">${esc(t('enter_amount_hint'))}</td></tr>`;
     return;
@@ -1119,6 +1166,7 @@ function updateMilestones() {
   }
 
   currentTotalUSD = total; totalIsQuote = false;
+  renderProjectValue();       // ahora que hay total: lista tachada + efectivo
   renderTotalDisplay();       // pinta el USD base al instante
   refreshConversions();       // y actualiza con la moneda seleccionada
 }
@@ -1435,14 +1483,9 @@ function updateNdaFills() {
 function todayPaymentLabel() {
   if (totalIsQuote) return t('to_quote');
   const todayUSD = todayAmountUSD();
-  const method   = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
-  const currency = method ? (method.currency || 'USD') : 'USD';
-  const code     = currency === 'CRYPTO' ? selectedToken : currency;
+  const code  = selectedCurrencyCode();
   // Escala lineal de la conversión cacheada (para el total) al monto de hoy.
-  const totalConv = code ? conversionFor(code) : undefined;
-  const value = (totalConv != null && currentTotalUSD)
-    ? totalConv * todayUSD / currentTotalUSD
-    : undefined;
+  const value = convertFromUSD(todayUSD);
   if (value != null) return fmtCurrency(code, value);
   return fmtCurrency('USD', todayUSD);   // sin conversión: USD base
 }
@@ -1472,14 +1515,24 @@ function collectAgreementDetails() {
   }
   rows.push([t('ad_agreed_total'), totalIsQuote ? t('to_quote') : fmtCurrency('USD', currentTotalUSD)]);
 
-  // Detalle de hitos (montos en USD, moneda operativa del acuerdo). Se indica
-  // el momento de cada uno ("Al firmar", "Al avanzar", "Al finalizar") para
-  // eliminar cualquier ambigüedad sobre cuándo se paga cada parte.
+  // Detalle de hitos. Se indica el momento de cada uno ("Al firmar", "Al
+  // avanzar", "Al finalizar") para eliminar cualquier ambigüedad sobre cuándo
+  // se paga cada parte.
+  //
+  // Si el cliente paga con un activo volátil (BTC/ETH), cada hito se expresa
+  // TAMBIÉN en el token a la cotización de hoy: el monto en token queda fijado
+  // en el acuerdo, así que las variaciones de mercado posteriores las absorbe
+  // quien se benefició del movimiento. Con fiat o stablecoins el USD alcanza.
   if (paymentMode === 'hitos' && selectedProd && !totalIsQuote) {
+    const token = payingWithVolatileToken() ? selectedCurrencyCode() : null;
     (selectedProd.milestones || []).forEach((m, i) => {
       const amt  = Math.round(currentTotalUSD * m.pct / 100);
       const when = WHEN[i] || '';
-      rows.push([t('ad_milestone_fmt', { n: i + 1, label: m.label, pct: m.pct, when }), fmtUSD(amt) + ' USD']);
+      const inToken = token ? convertFromUSD(amt) : undefined;
+      const value = inToken != null
+        ? `${fmtCurrency(token, inToken)} (${fmtUSD(amt)} USD)`
+        : fmtUSD(amt) + ' USD';
+      rows.push([t('ad_milestone_fmt', { n: i + 1, label: m.label, pct: m.pct, when }), value]);
     });
   }
 
@@ -1494,6 +1547,10 @@ function collectAgreementDetails() {
         rows.push([t('ad_network'), selectedNetwork.name]);
         if (selectedNetwork.address) rows.push([t('ad_address'), selectedNetwork.address]);
       }
+      // Cotización con la que se fijaron los montos en token: sin ella, las
+      // cifras del acuerdo no serían auditables más adelante.
+      const ru = selectedToken && rateRatesUsed ? rateRatesUsed[selectedToken] : null;
+      if (ru) rows.push([t('ad_rate'), `${fmtRateLine(ru)} · ${t('ad_rate_at')}`]);
     } else {
       // Datos de la transferencia fiat (Alias, CVU, IBAN, cuenta…).
       (method.fields || []).filter(f => f.value).forEach(f => rows.push([f.label, f.value]));
@@ -1547,7 +1604,11 @@ function renderNdaDetails() {
     const method = PAYMENT_METHODS.find(m => m.key === selectedPayKey);
     const modeTxt = paymentMode === 'hitos' ? t('clause8_hitos') : t('clause8_upfront');
     const methodTxt = method ? t('clause8_method_fmt', { method: method.label }) : '';
-    clause.textContent = modeTxt + methodTxt;
+    // Con activos volátiles el acuerdo fija los montos en token: la cláusula
+    // debe decirlo explícitamente para que la regla sea exigible.
+    const token = payingWithVolatileToken() ? selectedCurrencyCode() : null;
+    const cryptoTxt = token ? t('clause8_crypto_fmt', { token }) : '';
+    clause.textContent = modeTxt + methodTxt + cryptoTxt;
   }
 }
 

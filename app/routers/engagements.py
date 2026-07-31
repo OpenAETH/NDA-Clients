@@ -7,7 +7,11 @@ from app.core.config import settings
 from app.models.schemas import EngagementCreate, EngagementOut
 from app.services.pdf_service import generate_nda_pdf
 from app.services.email_service import send_nda_to_client, send_provider_notification
-from app.services import storage_service
+from app.services import storage_service, rates_service
+
+# Activos cripto volátiles: los hitos se fijan en el token a la cotización de
+# la firma. Las stablecoins van 1:1 al USD, así que no necesitan fijación.
+VOLATILE_TOKENS = {"BTC", "ETH"}
 
 router = APIRouter()
 
@@ -72,6 +76,37 @@ async def create_engagement(payload: EngagementCreate, request: Request):
     discount_pct = round((1 - final_price / base_price) * 100, 2) if base_price else 0
     milestones = product.get("milestones", [])
 
+    # ── Fijación de cotización cripto ────────────────────────────
+    # Si el cliente paga con un activo volátil, los hitos se denominan en ese
+    # token a la cotización de HOY, tomada del servidor (nunca del cliente).
+    # A partir de la firma, el monto en token es el debido: las variaciones de
+    # mercado posteriores las absorbe quien se benefició del movimiento.
+    crypto_lock = None
+    pay = payload.payment_details
+    if pay and (pay.currency or "").upper() == "CRYPTO" and (pay.token or "").upper() in VOLATILE_TOKENS:
+        token = pay.token.upper()
+        try:
+            conv = await rates_service.convert(final_price)
+            token_total = (conv.get("conversions", {}).get("CRYPTO") or {}).get(token)
+            rate_used = (conv.get("rates_used") or {}).get(token)
+            if token_total and rate_used:
+                crypto_lock = {
+                    "token":        token,
+                    "usd_per_token": rate_used["value"],   # 1 TOKEN = X USD
+                    "total":        token_total,
+                    "locked_at":    datetime.now(timezone.utc),
+                    "milestones":   [
+                        {
+                            "milestone_n": m.get("milestone_n", i + 1),
+                            "pct":         m.get("pct"),
+                            "amount":      round(token_total * m.get("pct", 0) / 100, 8),
+                        }
+                        for i, m in enumerate(milestones)
+                    ],
+                }
+        except Exception as e:  # noqa: BLE001 — FX caído no debe frenar la firma
+            print(f"[Engagements] Crypto rate lock failed ({e}); falling back to USD.")
+
     # ── Upsert client ────────────────────────────────────────────
     now = datetime.now(timezone.utc)
     client_doc = payload.client.model_dump()
@@ -99,6 +134,7 @@ async def create_engagement(payload: EngagementCreate, request: Request):
         "discount_code":       discount_meta["code"] if discount_meta else None,
         "discount_detail":     discount_meta,
         "final_price":         final_price,
+        "crypto_lock":         crypto_lock,
         "milestones_snapshot": milestones,
         "custom_description":  payload.custom_description,
         "payment_details":     payload.payment_details.model_dump() if payload.payment_details else None,
@@ -179,6 +215,7 @@ async def create_engagement(payload: EngagementCreate, request: Request):
             signed_at=signed_at,
             custom_description=payload.custom_description,
             payment_details=payload.payment_details.model_dump() if payload.payment_details else None,
+            crypto_lock=crypto_lock,
             lang=lang,
         )
 

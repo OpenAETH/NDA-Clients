@@ -40,6 +40,7 @@ PDF_STRINGS = {
         "th_milestone":  "Milestone",
         "th_when":       "When",
         "th_amount":     "Amount (USD)",
+        "th_amount_tok": "Amount",
         "total":         "TOTAL",
         "pay_section":   "Agreed payment method",
         "pay_mode":      "Mode",
@@ -47,6 +48,15 @@ PDF_STRINGS = {
         "pay_token":     "Token",
         "pay_network":   "Network",
         "pay_address":   "Address",
+        "pay_rate":      "Rate used",
+        "pay_rate_at":   "fixed on signing date",
+        "clause8_crypto": (
+            " Milestone amounts are denominated in {token} at the rate stated above, fixed on the "
+            "signing date. Each milestone is settled for the stated {token} amount regardless of its "
+            "market value at the time of payment: if {token} appreciates, the Client's cost in USD "
+            "terms is lower; if it depreciates, the Provider bears the difference. Both parties "
+            "accept this market risk."
+        ),
         "sig_title":     "Client Digital Signature",
         "signed_by":     "Signed by: {name}",
         "email_line":    "Email: {email}",
@@ -101,6 +111,7 @@ PDF_STRINGS = {
         "th_milestone":  "Hito",
         "th_when":       "Cuándo",
         "th_amount":     "Monto (USD)",
+        "th_amount_tok": "Monto",
         "total":         "TOTAL",
         "pay_section":   "Medio de pago acordado",
         "pay_mode":      "Modalidad",
@@ -108,6 +119,15 @@ PDF_STRINGS = {
         "pay_token":     "Token",
         "pay_network":   "Red",
         "pay_address":   "Dirección",
+        "pay_rate":      "Cotización usada",
+        "pay_rate_at":   "fijada a la fecha de firma",
+        "clause8_crypto": (
+            " Los montos de cada hito quedan denominados en {token} a la cotización indicada arriba, "
+            "fijada a la fecha de firma. Cada hito se cancela por el monto en {token} establecido, "
+            "con independencia de su valor de mercado al momento del pago: si {token} sube, el costo "
+            "del Cliente medido en USD resulta menor; si baja, el Proveedor absorbe la diferencia. "
+            "Ambas partes aceptan este riesgo de mercado."
+        ),
         "sig_title":     "Firma Digital del Cliente",
         "signed_by":     "Firmado por: {name}",
         "email_line":    "Email: {email}",
@@ -184,6 +204,7 @@ def generate_nda_pdf(
     signed_at: Optional[datetime] = None,
     custom_description: Optional[str] = None,
     payment_details: Optional[dict] = None,
+    crypto_lock: Optional[dict] = None,
     lang: str = "en",
 ) -> bytes:
     buf = io.BytesIO()
@@ -191,7 +212,7 @@ def generate_nda_pdf(
     _draw_page(c, client_name, client_email, client_company, client_country,
                product_name, payment_mode, total_amount, discount_pct,
                milestones, signature_data, engagement_id, signed_at,
-               custom_description, payment_details, lang)
+               custom_description, payment_details, crypto_lock, lang)
     c.save()
     return buf.getvalue()
 
@@ -199,7 +220,8 @@ def generate_nda_pdf(
 def _draw_page(c, client_name, client_email, client_company, client_country,
                product_name, payment_mode, total_amount, discount_pct,
                milestones, signature_data, engagement_id, signed_at,
-               custom_description=None, payment_details=None, lang="en"):
+               custom_description=None, payment_details=None,
+               crypto_lock=None, lang="en"):
 
     S = _strings(lang)
     MILESTONE_WHEN = S["milestone_when"]
@@ -270,11 +292,29 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
     _wrapped_text(c, intro, MARGIN, y, W - 2*MARGIN, 7.5, MUTED, line_height=4.5*mm)
     y -= 10*mm
 
+    # Montos por hito en token, si la cotización quedó fijada al firmar.
+    # Se resuelve acá porque lo usan tanto las cláusulas como la tabla de hitos.
+    lock_token = (crypto_lock or {}).get("token")
+    lock_by_n = {
+        m.get("milestone_n"): m.get("amount")
+        for m in (crypto_lock or {}).get("milestones", [])
+    }
+
     # ── Clauses ──────────────────────────────────────────────────
     # Cláusulas fijas (localizadas) + la 11 (ley aplicable) intercalada con la
     # jurisdicción concreta del cliente, respetando el orden numérico.
     clauses = list(S["clauses"])
     clauses.insert(10, (S["clause11_num"], client_country or S["juris_default"]))
+
+    # Si los hitos quedaron denominados en un activo volátil, la cláusula 8
+    # debe pactar explícitamente la regla de mercado: el monto en token es el
+    # debido, y la variación posterior corre por cuenta de quien se benefició.
+    if lock_token:
+        clauses = [
+            (num, text + S["clause8_crypto"].format(token=lock_token))
+            if num.startswith("8.") else (num, text)
+            for num, text in clauses
+        ]
 
     for num, text in clauses:
         if y < 70*mm:
@@ -306,7 +346,8 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
     c.drawString(MARGIN + 3*mm, y - 4.5*mm, S["th_milestone"])
     c.drawString(MARGIN + 60*mm, y - 4.5*mm, "%")
     c.drawString(MARGIN + 74*mm, y - 4.5*mm, S["th_when"])
-    c.drawString(MARGIN + 118*mm, y - 4.5*mm, S["th_amount"])
+    c.drawString(MARGIN + 118*mm, y - 4.5*mm,
+                 f"{S['th_amount_tok']} ({lock_token})" if lock_token else S["th_amount"])
     y -= 6*mm
 
     for i, m in enumerate(milestones):
@@ -319,7 +360,13 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
         c.drawString(MARGIN + 3*mm, y - 4*mm, m["label"])
         c.drawString(MARGIN + 60*mm, y - 4*mm, f"{m['pct']:.0f}%")
         c.drawString(MARGIN + 74*mm, y - 4*mm, MILESTONE_WHEN[i] if i < len(MILESTONE_WHEN) else "")
-        c.drawString(MARGIN + 118*mm, y - 4*mm, f"${amt:,.2f}" if total_amount else S["to_quote"])
+        if not total_amount:
+            amt_txt = S["to_quote"]
+        else:
+            tok_amt = lock_by_n.get(m.get("milestone_n", i + 1))
+            amt_txt = (f"{tok_amt:.6f} {lock_token} (${amt:,.2f})"
+                       if lock_token and tok_amt is not None else f"${amt:,.2f}")
+        c.drawString(MARGIN + 118*mm, y - 4*mm, amt_txt)
         y -= 5.5*mm
 
     # Total row
@@ -329,14 +376,19 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
     c.setFillColor(WHITE)
     c.drawString(MARGIN + 3*mm, y - 4.5*mm, S["total"])
     c.setFillColor(BRAND_ACCENT)
-    total_str = f"${total_amount:,.2f} USD" if total_amount else S["to_quote"]
+    if not total_amount:
+        total_str = S["to_quote"]
+    elif lock_token and (crypto_lock or {}).get("total") is not None:
+        total_str = f"{crypto_lock['total']:.6f} {lock_token} (${total_amount:,.2f})"
+    else:
+        total_str = f"${total_amount:,.2f} USD"
     c.drawString(MARGIN + 118*mm, y - 4.5*mm, total_str)
     y -= 10*mm
 
     # ── Medio de pago acordado ───────────────────────────────────
     # Detalle del método/medio elegido por el cliente (fiat o cripto), para
     # que el documento firmado contenga todos los datos del acuerdo.
-    pay_rows = _payment_rows(payment_mode, payment_details, S)
+    pay_rows = _payment_rows(payment_mode, payment_details, S, crypto_lock)
     if pay_rows:
         if y < 60*mm:
             c.showPage()
@@ -429,7 +481,7 @@ def _draw_page(c, client_name, client_email, client_company, client_country,
     c.drawCentredString(W/2, 4.5*mm, S["footer"])
 
 
-def _payment_rows(payment_mode, payment_details, S) -> list:
+def _payment_rows(payment_mode, payment_details, S, crypto_lock=None) -> list:
     """Pares [etiqueta, valor] con el medio de pago elegido (fiat o cripto)."""
     rows = []
     rows.append((
@@ -450,6 +502,14 @@ def _payment_rows(payment_mode, payment_details, S) -> list:
             rows.append((S["pay_network"], pd["network"]))
         if pd.get("address"):
             rows.append((S["pay_address"], pd["address"]))
+        # Cotización con la que se fijaron los montos: sin ella las cifras en
+        # token no serían auditables después.
+        if crypto_lock and crypto_lock.get("usd_per_token"):
+            rows.append((
+                S["pay_rate"],
+                f"1 {crypto_lock['token']} = ${crypto_lock['usd_per_token']:,.2f} USD "
+                f"· {S['pay_rate_at']}",
+            ))
     else:
         for f in (pd.get("fields") or []):
             if f.get("value"):

@@ -54,7 +54,7 @@
       "es": "Desarrollo de API + Frontend HTML con deploy en producción."
     },
     "base_price": 8000.0,
-    "discount_pct": 10,
+    "discount_pct": 0,
     "badge_label": { "en": "Premium", "es": "Premium" },
     "badge_type": "prem",
     "is_active": true,
