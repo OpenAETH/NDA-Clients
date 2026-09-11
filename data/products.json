@@ -3,10 +3,10 @@
     "id": "prod-sab",
     "code": "SAB",
     "name": "SAB",
-    "full_name": "Strategic AI Blueprint",
+    "full_name": "Strategic Assessment Bundle",
     "description": {
-      "en": "Strategic assessment of AI capabilities and data architecture to identify opportunities, risks, and define an implementation roadmap.",
-      "es": "Evaluación estratégica de capacidades de IA y arquitectura de datos para identificar oportunidades, riesgos y definir un roadmap de implementación."
+      "en": "Strategic assessment of business, data and technology to identify gaps, risks, opportunities and define a prioritized implementation roadmap.",
+      "es": "Assessment estratégico de negocio, datos y tecnología para identificar brechas, riesgos, oportunidades y definir un roadmap de implementación priorizado."
     },
     "base_price": 15000.0,
     "discount_pct": 0,
@@ -18,72 +18,743 @@
     "is_active": true,
     "sort_order": 1,
     "milestones": [
-      { "milestone_n": 1, "label": { "en": "Kickoff + NDA signature", "es": "Inicio + firma NDA" }, "pct": 40 },
-      { "milestone_n": 2, "label": { "en": "AI assessment + Data Architecture", "es": "Evaluación AI + Arquitectura de Datos" }, "pct": 30 },
-      { "milestone_n": 3, "label": { "en": "Strategic Blueprint + Roadmap", "es": "Blueprint estratégico + Roadmap" }, "pct": 30 }
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Kickoff + NDA signature",
+          "es": "Inicio + firma NDA"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Strategic assessment",
+          "es": "Assessment estratégico"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Strategic roadmap + closeout",
+          "es": "Roadmap estratégico + cierre"
+        },
+        "pct": 30
+      }
     ]
   },
   {
     "id": "prod-dae",
     "code": "DAE",
     "name": "DAE",
-    "full_name": "Data Audit & Evaluation",
+    "full_name": "Data Audit Express",
     "description": {
-      "en": "Audit and evaluation of existing data, systems and code.",
-      "es": "Auditoría y evaluación de datos, sistemas y código existente."
+      "en": "Express audit of data, reporting and analytical operations to identify quality issues, risks and improvement opportunities.",
+      "es": "Auditoría express de datos, reporting y operación analítica para identificar problemas de calidad, riesgos y oportunidades de mejora."
     },
     "base_price": 8000.0,
     "discount_pct": 0,
-    "badge_label": { "en": "Standard", "es": "Estándar" },
+    "badge_label": {
+      "en": "Standard",
+      "es": "Estándar"
+    },
     "badge_type": "std",
     "is_active": true,
     "sort_order": 2,
     "milestones": [
-      { "milestone_n": 1, "label": { "en": "Kickoff + NDA signature", "es": "Inicio + firma NDA" }, "pct": 40 },
-      { "milestone_n": 2, "label": { "en": "Partial report delivery", "es": "Entrega de informe parcial" }, "pct": 30 },
-      { "milestone_n": 3, "label": { "en": "Final delivery + closeout", "es": "Entrega final + cierre" }, "pct": 30 }
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Kickoff + NDA signature",
+          "es": "Inicio + firma NDA"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Audit findings + partial report",
+          "es": "Hallazgos + informe parcial"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Final diagnosis + roadmap",
+          "es": "Diagnóstico final + roadmap"
+        },
+        "pct": 30
+      }
     ]
   },
   {
     "id": "prod-cae",
     "code": "CAE",
     "name": "CAE",
-    "full_name": "Code & Architecture Engineering",
+    "full_name": "Code Audit Express",
     "description": {
-      "en": "API + HTML frontend development with production deployment.",
-      "es": "Desarrollo de API + Frontend HTML con deploy en producción."
+      "en": "Express audit of code, architecture and technical debt to identify risks, priorities and evolution opportunities.",
+      "es": "Auditoría express de código, arquitectura y deuda técnica para identificar riesgos, prioridades y oportunidades de evolución."
     },
     "base_price": 8000.0,
     "discount_pct": 0,
-    "badge_label": { "en": "Premium", "es": "Premium" },
+    "badge_label": {
+      "en": "Premium",
+      "es": "Premium"
+    },
     "badge_type": "prem",
     "is_active": true,
     "sort_order": 3,
     "milestones": [
-      { "milestone_n": 1, "label": { "en": "Kickoff + NDA signature", "es": "Inicio + firma NDA" }, "pct": 40 },
-      { "milestone_n": 2, "label": { "en": "API live (milestone 2)", "es": "API operativa (hito 2)" }, "pct": 30 },
-      { "milestone_n": 3, "label": { "en": "Frontend + final deploy", "es": "Frontend + deploy final" }, "pct": 30 }
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Kickoff + NDA signature",
+          "es": "Inicio + firma NDA"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Technical findings + partial report",
+          "es": "Hallazgos técnicos + informe parcial"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Final diagnosis + roadmap",
+          "es": "Diagnóstico final + roadmap"
+        },
+        "pct": 30
+      }
     ]
+  },
+  {
+    "id": "prod-web-business-application",
+    "code": "WEBAPP",
+    "name": "Web / Business Application",
+    "full_name": "Web / Business Application",
+    "description": {
+      "en": "Custom business application with frontend, backend, authentication, database, business logic and APIs.",
+      "es": "Aplicación empresarial a medida con frontend, backend, autenticación, base de datos, lógica de negocio y APIs."
+    },
+    "base_price": 8000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Project",
+      "es": "Proyecto"
+    },
+    "badge_type": "project",
+    "is_active": true,
+    "sort_order": 4,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Kickoff + architecture",
+          "es": "Inicio + arquitectura"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Application development milestone",
+          "es": "Hito de desarrollo de aplicación"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Production delivery",
+          "es": "Entrega en producción"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-rest-api",
+    "code": "REST-API",
+    "name": "REST API",
+    "full_name": "REST API Development",
+    "description": {
+      "en": "Documented REST API with endpoints, validation, authentication, OpenAPI and database integration.",
+      "es": "API REST documentada con endpoints, validaciones, autenticación, OpenAPI e integración con base de datos."
+    },
+    "base_price": 5000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Project",
+      "es": "Proyecto"
+    },
+    "badge_type": "project",
+    "is_active": true,
+    "sort_order": 5,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Architecture + API design",
+          "es": "Arquitectura + diseño de API"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "API implementation",
+          "es": "Implementación de API"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Documentation + delivery",
+          "es": "Documentación + entrega"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-data-pipeline",
+    "code": "DATA-PIPELINE",
+    "name": "Data Pipeline",
+    "full_name": "Data Pipeline Engineering",
+    "description": {
+      "en": "Automated data ingestion, transformation, validation, ETL/ELT, scheduling and logging.",
+      "es": "Ingesta, transformación, validación, ETL/ELT, scheduling y logging de datos automatizados."
+    },
+    "base_price": 6000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Project",
+      "es": "Proyecto"
+    },
+    "badge_type": "project",
+    "is_active": true,
+    "sort_order": 6,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Pipeline architecture + ingestion",
+          "es": "Arquitectura + ingesta"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Transformation + validation",
+          "es": "Transformación + validación"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Scheduling + logging + delivery",
+          "es": "Scheduling + logging + entrega"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-dashboard-bi",
+    "code": "BI",
+    "name": "Dashboard / BI",
+    "full_name": "Dashboard / Business Intelligence",
+    "description": {
+      "en": "Data model, Power BI or Looker dashboard, KPIs and automated refresh.",
+      "es": "Modelo de datos, dashboard en Power BI o Looker, KPIs y actualización automatizada."
+    },
+    "base_price": 4000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Project",
+      "es": "Proyecto"
+    },
+    "badge_type": "project",
+    "is_active": true,
+    "sort_order": 7,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Data model + KPI definition",
+          "es": "Modelo de datos + definición de KPIs"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Dashboard development",
+          "es": "Desarrollo del dashboard"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Automation + delivery",
+          "es": "Automatización + entrega"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-database-engineering",
+    "code": "DB-ENGINEERING",
+    "name": "Database Engineering",
+    "full_name": "Database Engineering",
+    "description": {
+      "en": "Database modeling, queries, indexes and migrations using PostgreSQL, Supabase, SQL Server or MongoDB.",
+      "es": "Modelado de bases de datos, queries, índices y migraciones utilizando PostgreSQL, Supabase, SQL Server o MongoDB."
+    },
+    "base_price": 4000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Project",
+      "es": "Proyecto"
+    },
+    "badge_type": "project",
+    "is_active": true,
+    "sort_order": 8,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Database assessment + modeling",
+          "es": "Assessment + modelado de base"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Engineering + optimization",
+          "es": "Ingeniería + optimización"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Migration + documentation",
+          "es": "Migración + documentación"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-integration-automation",
+    "code": "INTEGRATION",
+    "name": "Integration / Automation",
+    "full_name": "Integration / Automation",
+    "description": {
+      "en": "APIs, webhooks, CRM, ERP, Sheets and workflow automation integrated into the operational environment.",
+      "es": "APIs, webhooks, CRM, ERP, Sheets y automatizaciones integradas al entorno operativo."
+    },
+    "base_price": 5000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Project",
+      "es": "Proyecto"
+    },
+    "badge_type": "project",
+    "is_active": true,
+    "sort_order": 9,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Integration architecture",
+          "es": "Arquitectura de integración"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Integration implementation",
+          "es": "Implementación de integración"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Testing + production rollout",
+          "es": "Pruebas + puesta en producción"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-ai-llm",
+    "code": "AI-LLM",
+    "name": "AI / LLM Integration",
+    "full_name": "AI / LLM Integration",
+    "description": {
+      "en": "LLM, RAG, agents, tool calling and AI APIs integrated into operational systems.",
+      "es": "LLM, RAG, agentes, tool calling y APIs de IA integrados a sistemas operativos."
+    },
+    "base_price": 8000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Project",
+      "es": "Proyecto"
+    },
+    "badge_type": "project",
+    "is_active": true,
+    "sort_order": 10,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "AI architecture + use case definition",
+          "es": "Arquitectura IA + definición del caso"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "AI integration",
+          "es": "Integración de IA"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Testing + operational delivery",
+          "es": "Pruebas + entrega operativa"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-deployment",
+    "code": "DEPLOYMENT",
+    "name": "Deployment",
+    "full_name": "Deployment",
+    "description": {
+      "en": "Cloud deployment, environment configuration, domains, CI/CD and production setup.",
+      "es": "Deployment cloud, configuración de entornos, dominios, CI/CD y preparación de producción."
+    },
+    "base_price": 2000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Implementation",
+      "es": "Implementación"
+    },
+    "badge_type": "impl",
+    "is_active": true,
+    "sort_order": 11,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Environment + infrastructure setup",
+          "es": "Configuración de entorno + infraestructura"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Deployment + CI/CD",
+          "es": "Deployment + CI/CD"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Production validation",
+          "es": "Validación de producción"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-data-migration",
+    "code": "DATA-MIGRATION",
+    "name": "Data Migration",
+    "full_name": "Data Migration",
+    "description": {
+      "en": "Data migration, transformation, validation and reconciliation between systems.",
+      "es": "Migración, transformación, validación y reconciliación de datos entre sistemas."
+    },
+    "base_price": 3000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Implementation",
+      "es": "Implementación"
+    },
+    "badge_type": "impl",
+    "is_active": true,
+    "sort_order": 12,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Migration planning",
+          "es": "Planificación de migración"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Migration + transformation",
+          "es": "Migración + transformación"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Validation + reconciliation",
+          "es": "Validación + reconciliación"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-integration-rollout",
+    "code": "INTEGRATION-ROLLOUT",
+    "name": "Integration Rollout",
+    "full_name": "Integration Rollout",
+    "description": {
+      "en": "Production integration, testing and operational rollout of connected systems.",
+      "es": "Integración con sistemas productivos, pruebas y puesta en marcha operacional."
+    },
+    "base_price": 3000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Implementation",
+      "es": "Implementación"
+    },
+    "badge_type": "impl",
+    "is_active": true,
+    "sort_order": 13,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Production integration planning",
+          "es": "Planificación de integración productiva"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Integration testing",
+          "es": "Pruebas de integración"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Production rollout",
+          "es": "Puesta en producción"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-production-handover",
+    "code": "PRODUCTION-HANDOVER",
+    "name": "Production Handover",
+    "full_name": "Production Handover",
+    "description": {
+      "en": "Documentation, training, runbook and operational knowledge transfer.",
+      "es": "Documentación, capacitación, runbook y transferencia del conocimiento operacional."
+    },
+    "base_price": 2000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Implementation",
+      "es": "Implementación"
+    },
+    "badge_type": "impl",
+    "is_active": true,
+    "sort_order": 14,
+    "milestones": [
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Operational documentation",
+          "es": "Documentación operacional"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Training + runbook",
+          "es": "Capacitación + runbook"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Knowledge transfer + closeout",
+          "es": "Transferencia + cierre"
+        },
+        "pct": 30
+      }
+    ]
+  },
+  {
+    "id": "prod-technical-support",
+    "code": "TECH-SUPPORT",
+    "name": "Technical Support",
+    "full_name": "Technical Support",
+    "description": {
+      "en": "Ongoing technical support for incidents, diagnostics, corrections and specialized assistance.",
+      "es": "Soporte técnico continuo para incidentes, diagnóstico, correcciones y asistencia especializada."
+    },
+    "base_price": 1500.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Monthly",
+      "es": "Mensual"
+    },
+    "badge_type": "support",
+    "is_active": true,
+    "sort_order": 15,
+    "milestones": []
+  },
+  {
+    "id": "prod-maintenance",
+    "code": "MAINTENANCE",
+    "name": "Maintenance",
+    "full_name": "Maintenance",
+    "description": {
+      "en": "Preventive and corrective maintenance covering bugs, dependencies, databases, APIs and infrastructure.",
+      "es": "Mantenimiento preventivo y correctivo de bugs, dependencias, bases de datos, APIs e infraestructura."
+    },
+    "base_price": 2000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Monthly",
+      "es": "Mensual"
+    },
+    "badge_type": "support",
+    "is_active": true,
+    "sort_order": 16,
+    "milestones": []
+  },
+  {
+    "id": "prod-evolution",
+    "code": "EVOLUTION",
+    "name": "Evolution",
+    "full_name": "Evolution",
+    "description": {
+      "en": "Continuous evolution through new features, improvements and adaptations to changing business needs.",
+      "es": "Evolución continua mediante nuevas funcionalidades, mejoras y adaptaciones a las necesidades del negocio."
+    },
+    "base_price": 3000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Monthly / Retainer",
+      "es": "Mensual / Bolsa"
+    },
+    "badge_type": "support",
+    "is_active": true,
+    "sort_order": 17,
+    "milestones": []
+  },
+  {
+    "id": "prod-monitoring-optimization",
+    "code": "MONITORING",
+    "name": "Monitoring & Optimization",
+    "full_name": "Monitoring & Optimization",
+    "description": {
+      "en": "Continuous monitoring and optimization of logs, performance, availability, databases and APIs.",
+      "es": "Monitoreo y optimización continua de logs, performance, disponibilidad, bases de datos y APIs."
+    },
+    "base_price": 2000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Monthly",
+      "es": "Mensual"
+    },
+    "badge_type": "support",
+    "is_active": true,
+    "sort_order": 18,
+    "milestones": []
   },
   {
     "id": "prod-custom",
     "code": "CUSTOM",
     "name": "Custom",
-    "full_name": { "en": "Custom project", "es": "Proyecto personalizado" },
+    "full_name": {
+      "en": "Custom project",
+      "es": "Proyecto personalizado"
+    },
     "description": {
-      "en": "We define scope, technologies and price together.",
-      "es": "Definimos juntos el alcance, tecnologías y precio."
+      "en": "We define scope, technologies and price together according to the specific business and technical requirements.",
+      "es": "Definimos juntos el alcance, las tecnologías y el precio según los requerimientos específicos del negocio y la tecnología."
     },
     "base_price": null,
     "discount_pct": 0,
-    "badge_label": { "en": "Tailored", "es": "A medida" },
+    "badge_label": {
+      "en": "Tailored",
+      "es": "A medida"
+    },
     "badge_type": "custom",
     "is_active": true,
-    "sort_order": 4,
+    "sort_order": 19,
     "milestones": [
-      { "milestone_n": 1, "label": { "en": "Kickoff + NDA signature", "es": "Inicio + firma NDA" }, "pct": 40 },
-      { "milestone_n": 2, "label": { "en": "Intermediate milestone", "es": "Hito intermedio" }, "pct": 30 },
-      { "milestone_n": 3, "label": { "en": "Final delivery", "es": "Entrega final" }, "pct": 30 }
+      {
+        "milestone_n": 1,
+        "label": {
+          "en": "Kickoff + scope definition",
+          "es": "Inicio + definición de alcance"
+        },
+        "pct": 40
+      },
+      {
+        "milestone_n": 2,
+        "label": {
+          "en": "Intermediate milestone",
+          "es": "Hito intermedio"
+        },
+        "pct": 30
+      },
+      {
+        "milestone_n": 3,
+        "label": {
+          "en": "Final delivery",
+          "es": "Entrega final"
+        },
+        "pct": 30
+      }
     ]
   }
 ]
