@@ -5,7 +5,8 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from pathlib import Path
 import os
-from app.core import sales_log
+from app.core import sales_log, keepalive
+from app.core.config import settings
 from app.routers import products, engagements, payments, payment_info, discounts, rates
 
 STATIC_DIR = Path(__file__).parent.parent / "static"
@@ -14,9 +15,13 @@ STATIC_DIR = Path(__file__).parent.parent / "static"
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # El cliente Mongo del registro de ventas es lazy (se conecta al primer
-    # uso). Acá solo lo cerramos al apagar. La persistencia operativa vive en
-    # archivos JSON, sin conexión que abrir al arrancar.
+    # uso). La persistencia operativa vive en archivos JSON, sin conexión
+    # que abrir al arrancar.
+    # Keep-alive: self-ping HTTP periódico a la propia URL pública para
+    # evitar el spin-down de Render free tier (ver app/core/keepalive.py).
+    keepalive.start()
     yield
+    keepalive.stop()
     sales_log.close()
 
 
@@ -50,7 +55,13 @@ app.include_router(rates.router,        prefix="/api/rates",        tags=["Rates
 
 @app.get("/health", tags=["Health"])
 async def health():
-    return {"status": "ok"}
+    # Este endpoint es también el target del self-ping de keep-alive
+    # (app/core/keepalive.py), así que además de responder rápido para
+    # Render, aprovechamos la request para chequear Mongo de verdad.
+    mongo_status = "disabled"
+    if settings.mongo_enabled:
+        mongo_status = "up" if await sales_log.ping_db() else "down"
+    return {"status": "ok", "mongo": mongo_status}
 
 
 # ── Static frontend ───────────────────────────────────────────────

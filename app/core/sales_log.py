@@ -73,6 +73,23 @@ async def update_sale_status(engagement_id: str, changes: dict) -> None:
         print(f"[SALES] No se pudo actualizar la venta en Mongo (no-fatal): {e}")
 
 
+async def ping_db() -> bool:
+    """
+    Ping liviano a Mongo para health checks / keep-alive.
+    Devuelve False si Mongo no está configurado o si el ping falla — nunca
+    levanta excepción (best-effort, igual que el resto de este módulo).
+    """
+    db = _get_db()
+    if db is None:
+        return False
+    try:
+        await db.command("ping")
+        return True
+    except Exception as e:
+        print(f"[SALES] Ping a Mongo falló (no-fatal): {e}")
+        return False
+
+
 def close():
     """Cierra el cliente Mongo si estaba abierto."""
     global _client

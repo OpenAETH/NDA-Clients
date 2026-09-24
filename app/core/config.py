@@ -60,6 +60,14 @@ class Settings(BaseSettings):
             and self.R2_SECRET_ACCESS_KEY
         )
 
+    # ── Keep-alive (evita el spin-down de Render free tier) ─────────
+    # Render apaga los Web Services free tras ~15 min SIN TRÁFICO ENTRANTE
+    # público. Ver app/core/keepalive.py para el detalle de por qué el
+    # ping tiene que ser HTTP a la URL pública y no solo una consulta a
+    # la DB en memoria del proceso.
+    KEEP_ALIVE_ENABLED: bool = True
+    KEEP_ALIVE_INTERVAL_SECONDS: int = 600  # 10 min (< 15 min de Render)
+
     model_config = {"env_file": ".env", "case_sensitive": True}
 
 
