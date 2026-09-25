@@ -710,6 +710,312 @@
     "milestones": []
   },
   {
+    "id": "prod-sprint-discovery",
+    "code": "SPRINT-DISCOVERY",
+    "name": "Sprint Discovery",
+    "full_name": "Two-week Sprint Discovery",
+    "description": {
+      "en": "Two-week engagement focused on analysis, architecture and a prioritized implementation roadmap.",
+      "es": "Sprint de dos semanas enfocado en análisis, arquitectura y definición de un roadmap de implementación priorizado."
+    },
+    "base_price": 3600.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Two-week sprint",
+      "es": "Sprint de dos semanas"
+    },
+    "badge_type": "sprint",
+    "is_active": true,
+    "sort_order": 20,
+    "deliverables": [
+      {
+        "en": "Current-state assessment",
+        "es": "Assessment del estado actual"
+      },
+      {
+        "en": "Proposed technical architecture",
+        "es": "Arquitectura técnica propuesta"
+      },
+      {
+        "en": "Recommendations",
+        "es": "Recomendaciones"
+      },
+      {
+        "en": "Roadmap",
+        "es": "Roadmap"
+      }
+    ],
+    "cta": {
+      "label": {
+        "en": "Start Discovery",
+        "es": "Iniciar Discovery"
+      },
+      "url": "https://calendly.com/AETHERYON"
+    },
+    "related_offers": {
+      "en": "Need a standalone audit? See Assessments (billed separately).",
+      "es": "¿Necesita una auditoría independiente? Consulte Assessments (facturación separada)."
+    }
+  },
+  {
+    "id": "prod-sprint-build",
+    "code": "SPRINT-BUILD",
+    "name": "Sprint Build",
+    "full_name": "Two-week Sprint Build",
+    "description": {
+      "en": "Two-week engagement focused on delivering a prototype or concrete feature.",
+      "es": "Sprint de dos semanas enfocado en entregar un prototipo o funcionalidad concreta."
+    },
+    "base_price": 7500.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Two-week sprint",
+      "es": "Sprint de dos semanas"
+    },
+    "badge_type": "sprint",
+    "is_active": true,
+    "sort_order": 21,
+    "deliverables": [
+      {
+        "en": "Specific solution development",
+        "es": "Desarrollo de solución específica"
+      },
+      {
+        "en": "Component integration",
+        "es": "Integración de componentes"
+      },
+      {
+        "en": "Testing",
+        "es": "Pruebas"
+      },
+      {
+        "en": "Documentation",
+        "es": "Documentación"
+      }
+    ],
+    "cta": {
+      "label": {
+        "en": "Start Build",
+        "es": "Iniciar Build"
+      },
+      "url": "https://calendly.com/AETHERYON"
+    },
+    "related_offers": {
+      "en": "Already know the scope? See Projects / Artifacts.",
+      "es": "¿Ya conoce el alcance? Consulte Projects / Artifacts."
+    }
+  },
+  {
+    "id": "prod-sprint-system",
+    "code": "SPRINT-SYSTEM",
+    "name": "Sprint System",
+    "full_name": "Two-week Sprint System",
+    "description": {
+      "en": "Two-week engagement for multiple components, system architecture, development and integration.",
+      "es": "Sprint de dos semanas para múltiples componentes, arquitectura de sistemas, desarrollo e integración."
+    },
+    "base_price": 12000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Two-week sprint",
+      "es": "Sprint de dos semanas"
+    },
+    "badge_type": "sprint",
+    "is_active": true,
+    "sort_order": 22,
+    "deliverables": [
+      {
+        "en": "Architecture design",
+        "es": "Diseño de arquitectura"
+      },
+      {
+        "en": "Development & integration",
+        "es": "Desarrollo e integración"
+      },
+      {
+        "en": "Delivery",
+        "es": "Entrega"
+      },
+      {
+        "en": "Evolution roadmap",
+        "es": "Roadmap de evolución"
+      }
+    ],
+    "cta": {
+      "label": {
+        "en": "Start System",
+        "es": "Iniciar System"
+      },
+      "url": "https://calendly.com/AETHERYON"
+    },
+    "related_offers": {
+      "en": "Already know the scope? See Projects / Artifacts.",
+      "es": "¿Ya conoce el alcance? Consulte Projects / Artifacts."
+    }
+  },
+  {
+    "id": "prod-subscription-continuous",
+    "code": "SUB-CONTINUOUS",
+    "name": "Continuous",
+    "full_name": "AETHERYON Subscription - Continuous",
+    "description": {
+      "en": "Monthly subscription keeping one technical priority active with continuous attention, development, support and evolution.",
+      "es": "Suscripción mensual que mantiene una prioridad técnica activa con atención continua, desarrollo, soporte y evolución."
+    },
+    "base_price": 3000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Monthly",
+      "es": "Mensual"
+    },
+    "badge_type": "subscription",
+    "is_active": true,
+    "sort_order": 23,
+    "features": [
+      {
+        "en": "1 active priority",
+        "es": "1 prioridad activa"
+      },
+      {
+        "en": "Maintenance",
+        "es": "Mantenimiento"
+      },
+      {
+        "en": "Small evolutions",
+        "es": "Evoluciones menores"
+      },
+      {
+        "en": "Technical support",
+        "es": "Soporte técnico"
+      },
+      {
+        "en": "Reviews",
+        "es": "Revisiones"
+      }
+    ],
+    "tagline": {
+      "en": "Keeps your system moving.",
+      "es": "Mantiene tu sistema en movimiento."
+    },
+    "cta": {
+      "label": {
+        "en": "Start Subscription",
+        "es": "Iniciar suscripción"
+      },
+      "url": "https://calendly.com/AETHERYON"
+    }
+  },
+  {
+    "id": "prod-subscription-build",
+    "code": "SUB-BUILD",
+    "name": "Build",
+    "full_name": "AETHERYON Subscription - Build",
+    "description": {
+      "en": "Monthly continuous development focused on one active priority at a time, integrations, automations and applications.",
+      "es": "Desarrollo continuo mensual enfocado en una prioridad activa por vez, integraciones, automatizaciones y aplicaciones."
+    },
+    "base_price": 6000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Monthly",
+      "es": "Mensual"
+    },
+    "badge_type": "subscription",
+    "is_active": true,
+    "sort_order": 24,
+    "features": [
+      {
+        "en": "Continuous development",
+        "es": "Desarrollo continuo"
+      },
+      {
+        "en": "1 priority at a time",
+        "es": "1 prioridad por vez"
+      },
+      {
+        "en": "Integrations",
+        "es": "Integraciones"
+      },
+      {
+        "en": "Automations",
+        "es": "Automatizaciones"
+      },
+      {
+        "en": "Applications",
+        "es": "Aplicaciones"
+      }
+    ],
+    "tagline": {
+      "en": "Turns ideas into solutions.",
+      "es": "Convierte ideas en soluciones."
+    },
+    "cta": {
+      "label": {
+        "en": "Start Subscription",
+        "es": "Iniciar suscripción"
+      },
+      "url": "https://calendly.com/AETHERYON"
+    }
+  },
+  {
+    "id": "prod-subscription-partner",
+    "code": "SUB-PARTNER",
+    "name": "Partner",
+    "full_name": "AETHERYON Subscription - Partner",
+    "description": {
+      "en": "Monthly technology partnership covering architecture, development, data, AI, technical decisions and coordination.",
+      "es": "Partnership tecnológico mensual que cubre arquitectura, desarrollo, datos, IA, decisiones técnicas y coordinación."
+    },
+    "base_price": 10000.0,
+    "discount_pct": 0,
+    "badge_label": {
+      "en": "Monthly · Partner",
+      "es": "Mensual · Partner"
+    },
+    "badge_type": "subscription",
+    "is_active": true,
+    "sort_order": 25,
+    "features": [
+      {
+        "en": "Architecture",
+        "es": "Arquitectura"
+      },
+      {
+        "en": "Development",
+        "es": "Desarrollo"
+      },
+      {
+        "en": "Data",
+        "es": "Datos"
+      },
+      {
+        "en": "AI",
+        "es": "IA"
+      },
+      {
+        "en": "Technical decisions",
+        "es": "Decisiones técnicas"
+      },
+      {
+        "en": "Coordination",
+        "es": "Coordinación"
+      }
+    ],
+    "tagline": {
+      "en": "Your external technology partner.",
+      "es": "Tu partner tecnológico externo."
+    },
+    "cta": {
+      "label": {
+        "en": "Start Subscription",
+        "es": "Iniciar suscripción"
+      },
+      "url": "https://calendly.com/AETHERYON"
+    }
+  }
+
+  
+  {
     "id": "prod-custom",
     "code": "CUSTOM",
     "name": "Custom",
